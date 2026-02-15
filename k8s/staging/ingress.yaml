@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: staging-aetherroyale-backend-ingress
+  namespace: staging-aetherroyale-backend
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - staging.api.aetherroyale.crzgames.com
+      secretName: staging-aetherroyale-api-tls
+  rules:
+    - host: staging.api.aetherroyale.crzgames.com
+      http:
+        paths:
+          - pathType: Prefix
+            path: '/'
+            backend:
+              service:
+                name: staging-aetherroyale-backend-service
+                port:
+                  number: 3333

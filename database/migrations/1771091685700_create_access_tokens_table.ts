@@ -7,7 +7,6 @@ export default class extends BaseSchema {
     this.schema.createTable(this.tableName, (table) => {
       table.increments('id')
       table.integer('tokenable_id').notNullable().unsigned().references('id').inTable('users').onDelete('CASCADE')
-
       table.string('type').notNullable()
       table.string('name').nullable()
       table.string('hash').notNullable()

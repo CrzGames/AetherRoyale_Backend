@@ -1,12 +1,7 @@
 /**
  * Les données de la réponse de connexion.
  * @type {object} LoginSuccessResponseBody
- *
- * @property {string} keyEncryption
- * Clé de chiffrement symétrique unique générée à la connexion.
- * Elle est utilisée par le client pour chiffrer les paquets UDP (ex: XChaCha20-Poly1305)
- * lors de la communication avec les serveurs de jeu.
- *
+ * 
  * @property {object} token
  * Jeton d’accès opaque généré par AdonisJS (Access Tokens Guard).
  * Ce token doit être envoyé par le client dans l’en-tête HTTP :
@@ -21,12 +16,19 @@
  *
  * @property {string|null} token.expiresAt
  * Date d’expiration du token au format ISO 8601, ou null si le token n’expire pas.
+ * 
+ * @property {string} quilkin_dns
+ * DNS du service Quilkin exposant les GameServers Agones pour la communication UDP des clients.
+ *
+ * @property {number} quilkin_port
+ * Port de communication UDP exposé par le service Quilkin pour les GameServers Agones.
  */
 export interface LoginSuccessResponseBody {
-  keyEncryption: string
   token: {
     type: 'bearer'
     value: string
     expiresAt: string | null
-  }
+  },
+  quilkin_dns: string,
+  quilkin_port: number,
 }

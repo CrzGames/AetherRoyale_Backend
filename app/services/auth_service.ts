@@ -5,6 +5,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import type { AccessToken } from '@adonisjs/auth/access_tokens'
 import logger from '@adonisjs/core/services/logger'
 import InternalServerErrorException from '#exceptions/internal_server_error_exception'
+import env from '#start/env'
 
 /**
  * Service d'authentification gérant les processus d'identification pour le client SeaTyrants.
@@ -71,12 +72,13 @@ export default class AuthService {
       const token: AccessToken = await auth.use('api').createToken(user)
 
       return {
-        keyEncryption: 'TODO_GENERATE_KEY', // <-- TODO: generate key XChaCha20Poly1305 ici
         token: {
           type: 'bearer',
           value: token.value!.release(),
           expiresAt: token.expiresAt ? token.expiresAt.toISOString() : null,
         },
+        quilkin_dns: env.get('QUILKIN_DNS'),
+        quilkin_port: env.get('QUILKIN_PORT'),
       } as LoginSuccessResponseBody
     } catch (error: any) {
       logger.error({ error }, 'Signin error')

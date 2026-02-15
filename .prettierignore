@@ -20,3 +20,6 @@ yarn-error.log*
 
 # Vim swap files
 *.swp
+
+# Agones Allocator
+agones-allocator/

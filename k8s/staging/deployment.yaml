@@ -18,7 +18,7 @@ spec:
       containers:
         - name: staging-aetherroyale-backend
           image: corentin35/aetherroyale-backend:staging-${TAG_VERSION}
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3333
           env:

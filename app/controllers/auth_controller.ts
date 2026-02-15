@@ -41,6 +41,9 @@ export default class AuthController {
       password: payload.password,
     }
 
+    // Log de la tentative d'inscription avec email et username
+    logger.info({ email: data.email, username: data.username }, 'SignUp attempt')
+
     // Appeler le service Auth pour créer le compte utilisateur
     await AuthService.signUp(data)
 

@@ -1,9 +1,15 @@
 {
   "extends": "@adonisjs/tsconfig/tsconfig.app.json",
-  "exclude": ["node_modules", "build", "dist"],
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    "agones-allocator/proto/generated",
+    "agones-allocator/proto/generated-dts"
+  ],
   "include": ["**/*.ts"],
   "compilerOptions": {
     "rootDir": "./",
-    "outDir": "./build"
+    "outDir": "./build",
   }
 }

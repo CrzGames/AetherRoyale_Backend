@@ -1,4 +1,6 @@
 import router from '@adonisjs/core/services/router'
+import { allocateGameServerInFleet } from '#services/agones_allocator_service'
+import { AllocationSecurityData } from '#types/agones_types'
 
 /**
  * Routes système
@@ -19,4 +21,11 @@ router.get('/', async (): Promise<{ hello: string }> => {
   return {
     hello: 'test',
   }
+})
+
+// Route de test pour l'allocation d'un GameServer via Agones Allocator
+router.get('/test/agones-allocate', async ({ response }) => {
+  const data: AllocationSecurityData = await allocateGameServerInFleet()
+
+  return response.ok(data)
 })

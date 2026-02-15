@@ -9,7 +9,6 @@
     "build": "node ace build",
     "dev": "node ace serve --hmr",
     "dev:docker": "docker compose up",
-    "dev:swagger": "node ace serve --watch",
     "test:all": "node ace test",
     "test:all:watch": "node ace test --watch",
     "test:unit": "node ace test unit",

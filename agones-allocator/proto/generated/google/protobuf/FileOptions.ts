@@ -1,0 +1,79 @@
+// Original file: null
+
+import type { FeatureSet as _google_protobuf_FeatureSet, FeatureSet__Output as _google_protobuf_FeatureSet__Output } from '../../google/protobuf/FeatureSet';
+import type { UninterpretedOption as _google_protobuf_UninterpretedOption, UninterpretedOption__Output as _google_protobuf_UninterpretedOption__Output } from '../../google/protobuf/UninterpretedOption';
+import type { Swagger as _grpc_gateway_protoc_gen_openapiv2_options_Swagger, Swagger__Output as _grpc_gateway_protoc_gen_openapiv2_options_Swagger__Output } from '../../grpc/gateway/protoc_gen_openapiv2/options/Swagger';
+
+// Original file: null
+
+export const _google_protobuf_FileOptions_OptimizeMode = {
+  SPEED: 'SPEED',
+  CODE_SIZE: 'CODE_SIZE',
+  LITE_RUNTIME: 'LITE_RUNTIME',
+} as const;
+
+export type _google_protobuf_FileOptions_OptimizeMode =
+  | 'SPEED'
+  | 1
+  | 'CODE_SIZE'
+  | 2
+  | 'LITE_RUNTIME'
+  | 3
+
+export type _google_protobuf_FileOptions_OptimizeMode__Output = typeof _google_protobuf_FileOptions_OptimizeMode[keyof typeof _google_protobuf_FileOptions_OptimizeMode]
+
+export interface FileOptions {
+  'javaPackage'?: (string);
+  'javaOuterClassname'?: (string);
+  'optimizeFor'?: (_google_protobuf_FileOptions_OptimizeMode);
+  'javaMultipleFiles'?: (boolean);
+  'goPackage'?: (string);
+  'ccGenericServices'?: (boolean);
+  'javaGenericServices'?: (boolean);
+  'pyGenericServices'?: (boolean);
+  /**
+   * @deprecated
+   */
+  'javaGenerateEqualsAndHash'?: (boolean);
+  'deprecated'?: (boolean);
+  'javaStringCheckUtf8'?: (boolean);
+  'ccEnableArenas'?: (boolean);
+  'objcClassPrefix'?: (string);
+  'csharpNamespace'?: (string);
+  'swiftPrefix'?: (string);
+  'phpClassPrefix'?: (string);
+  'phpNamespace'?: (string);
+  'phpMetadataNamespace'?: (string);
+  'rubyPackage'?: (string);
+  'features'?: (_google_protobuf_FeatureSet | null);
+  'uninterpretedOption'?: (_google_protobuf_UninterpretedOption)[];
+  '.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger'?: (_grpc_gateway_protoc_gen_openapiv2_options_Swagger | null);
+}
+
+export interface FileOptions__Output {
+  'javaPackage': (string);
+  'javaOuterClassname': (string);
+  'optimizeFor': (_google_protobuf_FileOptions_OptimizeMode__Output);
+  'javaMultipleFiles': (boolean);
+  'goPackage': (string);
+  'ccGenericServices': (boolean);
+  'javaGenericServices': (boolean);
+  'pyGenericServices': (boolean);
+  /**
+   * @deprecated
+   */
+  'javaGenerateEqualsAndHash': (boolean);
+  'deprecated': (boolean);
+  'javaStringCheckUtf8': (boolean);
+  'ccEnableArenas': (boolean);
+  'objcClassPrefix': (string);
+  'csharpNamespace': (string);
+  'swiftPrefix': (string);
+  'phpClassPrefix': (string);
+  'phpNamespace': (string);
+  'phpMetadataNamespace': (string);
+  'rubyPackage': (string);
+  'features': (_google_protobuf_FeatureSet__Output | null);
+  'uninterpretedOption': (_google_protobuf_UninterpretedOption__Output)[];
+  '.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger': (_grpc_gateway_protoc_gen_openapiv2_options_Swagger__Output | null);
+}

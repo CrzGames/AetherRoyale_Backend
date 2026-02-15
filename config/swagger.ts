@@ -12,7 +12,7 @@ export default {
 
   // Informations générales sur l'API
   info: {
-    title: 'SeaTyrants API',
+    title: 'Aether Royale - API',
     version: packageJson.version,
     description: 'Documentation Swagger auto-générée.',
   },
@@ -144,7 +144,7 @@ export default {
       scheme: 'bearer',
     },
   },
-  authMiddlewares: ['health', 'restrictCorsToCrzGames'], // Détection automatique des middlewares
+  authMiddlewares: ['health', 'auth'], // Détection automatique des middlewares
   defaultSecurityScheme: 'BearerAuth', // Schéma par défaut
 
   // Persist autorisation entre les rechargements dans Swagger UI

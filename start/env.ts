@@ -32,4 +32,6 @@ export default await Env.create(new URL('../', import.meta.url), {
   AGONES_ALLOCATOR_ENDPOINT_GRPC: Env.schema.string(),
   AGONES_GAMESERVERS_NAMESPACE: Env.schema.string(),
   AGONES_FLEET_NAME: Env.schema.string(),
+  QUILKIN_DNS: Env.schema.string(),
+  QUILKIN_PORT: Env.schema.number(),
 })

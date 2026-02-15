@@ -204,5 +204,5 @@ Les clés privées réelles sont stockées de manière sécurisée dans **1Passw
 1. Ajoutées les SECRETS_GITHUB pour :
    - DOCKER_HUB_USERNAME
    - DOCKER_HUB_ACCESS_TOKEN
-   - KUBECONFIG
-   - PAT_TOKEN (crée un nouveau token si besoin sur le site de github puis dans le menu du "Profil" puis -> "Settings" -> "Developper Settings' -> 'Personnal Access Tokens' -> Tokens (classic))
+   - KUBECONFIG_CLUSTER_STAGING_CRZGAMES
+   - PAT (crée un nouveau token si besoin sur le site de github puis dans le menu du "Profil" puis -> "Settings" -> "Developper Settings' -> 'Personnal Access Tokens' -> Tokens (classic))

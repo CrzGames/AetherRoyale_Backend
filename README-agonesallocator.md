@@ -23,7 +23,7 @@ Astuce : tu peux déposer un fichier “marker” de version (ex: `v1.55.0-agone
 
 ### Pourquoi ?
 
-Le `.proto` d’Agones importe des dépendances (`google/api/...`, `grpc-gateway/...`), donc il faut fournir les *include paths*.
+Le `.proto` d’Agones importe des dépendances (`google/api/...`, `grpc-gateway/...`), donc il faut fournir les _include paths_.
 
 ---
 
@@ -83,9 +83,9 @@ agones-allocator/proto/generated/
 
 ### Objectif
 
-* Ne pas importer les `.ts` générés dans le code (sinon ESM + extensions = enfer)
-* Versionner uniquement des types (`.d.ts`)
-* Consommer via `import type ...` + alias `#agones/*`
+- Ne pas importer les `.ts` générés dans le code (sinon ESM + extensions = enfer)
+- Versionner uniquement des types (`.d.ts`)
+- Consommer via `import type ...` + alias `#agones/*`
 
 ---
 

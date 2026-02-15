@@ -54,7 +54,7 @@ const packageDefinition: protoLoader.PackageDefinition = protoLoader.loadSync(pr
  * Donc on récupère :
  *   .allocation.AllocationService
  */
-const proto: ProtoGrpcType = (grpc.loadPackageDefinition(packageDefinition) as unknown) as ProtoGrpcType;
+const proto: ProtoGrpcType = grpc.loadPackageDefinition(packageDefinition) as unknown as ProtoGrpcType
 
 /**
  * Création du client gRPC vers l’Agones Allocator.
@@ -87,7 +87,7 @@ const request: AllocationRequest = {
     {
       matchLabels: {
         // Match la Fleet ciblée via son nom exact
-        "agones.dev/fleet": env.get('AGONES_FLEET_NAME'),
+        'agones.dev/fleet': env.get('AGONES_FLEET_NAME'),
       },
     },
   ],
@@ -96,7 +96,7 @@ const request: AllocationRequest = {
   metadata: {
     annotations: {
       // Token Quilkin qui permettra le routage UDP vers le bon GameServer dans la Fleet, token à générer par le backend, exemple :
-      "quilkin.dev/tokens": "MDAwMDAwMDAwMDAwMDQ1Ng==", // # Base64 de 0000000000000456 = MDAwMDAwMDAwMDAwMDQ1Ng== (16 bytes)
+      'quilkin.dev/tokens': 'MDAwMDAwMDAwMDAwMDQ1Ng==', // # Base64 de 0000000000000456 = MDAwMDAwMDAwMDAwMDQ1Ng== (16 bytes)
     },
   },
 }

@@ -25,21 +25,13 @@ export default class AgonesController {
    * @param {HttpContext['response']} ctx.response - The HTTP response object
    * @returns {Promise<void>} - A promise that resolves with no return value
    */
-  public async AgonesFleetAutoScale({ request, response }: HttpContext): Promise<void> {
-    // TODO: Implémenter la logique de mise à l'échelle automatique d'une flotte Agones en fonction des données reçues dans la requête
-    try {
-      // Récupérer les données de la requête
-      const requestData = request.body()
-      response.status(201).send({
-        message: "Mise à l'échelle automatique de la flotte Agones réussie",
-        data: requestData,
-      })
-    } catch (error) {
-      console.error("Erreur lors de la mise à l'échelle automatique de la flotte Agones :", error)
-      response.status(500).send({
-        message: "Erreur interne du serveur lors de la mise à l'échelle automatique de la flotte Agones",
-        error: error.message,
-      })
-    }
+  public AgonesFleetAutoScale({ request, response }: HttpContext): void {
+    // TODO: Implémenter la logique de mise à l'échelle automatique de la flotte Agones en fonction des données de la requête
+    const requestData: Record<string, any> = request.body()
+
+    response.status(201).send({
+      message: "Mise à l'échelle automatique de la flotte Agones réussie",
+      data: requestData,
+    })
   }
 }

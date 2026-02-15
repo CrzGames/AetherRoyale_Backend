@@ -8,7 +8,7 @@
 - Docker / DockerCompose (Develop)
 - Kubernetes (Staging and Production)
 - Unit / Functional Tests (Japa)
-- MariaDB (Memory database)
+- MariaDB (Database)
 
 <br /><br /><br /><br />
 

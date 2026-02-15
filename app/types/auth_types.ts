@@ -1,4 +1,4 @@
-import type { SingInRequestBody } from '#interfaces/auth_request_body_interfaces'
+import type { SignUpRequestBody, SingInRequestBody } from '#interfaces/auth_request_body_interfaces'
 
 /**
  * Interface représentant les données de connexion d'un utilisateur
@@ -11,3 +11,12 @@ import type { SingInRequestBody } from '#interfaces/auth_request_body_interfaces
 export interface SingInData extends SingInRequestBody {
   ipAddress: string
 }
+
+/**
+ * Interface représentant les données d'inscription d'un utilisateur
+ * @interface
+ * @property {string} username - Le nom d'utilisateur
+ * @property {string} email - L'email de l'utilisateur
+ * @property {string} password - Le mot de passe de l'utilisateur
+ */
+export interface SignUpData extends SignUpRequestBody {}

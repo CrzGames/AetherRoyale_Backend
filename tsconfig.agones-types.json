@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationMap": false,
+    "outDir": "agones-allocator/proto/generated-dts",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "skipLibCheck": true,
+    "stripInternal": true
+  },
+  "include": ["agones-allocator/proto/generated/**/*.ts"]
+}

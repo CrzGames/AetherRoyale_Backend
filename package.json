@@ -35,7 +35,7 @@
     "lint:prettier": "prettier --check .",
     "lint:ts": "tsc --noEmit",
     "lint:eslint": "eslint .",
-    "lint:fix": "prettier --write --list-different . && npm run lint:prettier --fix && npm run lint:eslint --fix",
+    "lint:fix": "prettier --write . && eslint . --fix",
     "postbuild": "npm run generate:swagger && cp -a swagger.yml build/",
     "prepare": "husky"
   },
@@ -45,6 +45,8 @@
     "@adonisjs/cors": "^2.2.1",
     "@adonisjs/lucid": "^21.8.2",
     "@foadonis/crypt": "^0.1.0",
+    "@grpc/grpc-js": "^1.14.3",
+    "@grpc/proto-loader": "^0.8.0",
     "@vinejs/vine": "^4.3.0",
     "adonis-autoswagger": "^3.73.0",
     "argon2": "^0.43.1",
@@ -115,7 +117,13 @@
     "#enums/*": "./app/enums/*.js",
     "#interfaces/*": "./app/interfaces/*.js",
     "#types/*": "./app/types/*.js",
-    "#orm/*": "./app/orm/*.js"
+    "#orm/*": "./app/orm/*.js",
+    "#agones/allocation": {
+      "types": "./agones-allocator/proto/generated-dts/allocation.d.ts"
+    },
+    "#agones/allocation/*": {
+      "types": "./agones-allocator/proto/generated-dts/allocation/*.d.ts"
+    }
   },
   "engines": {
     "node": ">=24.13.1"

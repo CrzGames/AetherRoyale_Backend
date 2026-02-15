@@ -18,19 +18,22 @@ const AuthFinder: ReturnType<typeof withAuthFinder> = withAuthFinder((): Hash =>
 
 export default class User extends compose(BaseModel, AuthFinder) {
   @column({ isPrimary: true })
-  declare id: number
+  declare public id: number
 
   @column()
-  declare email: string
+  declare public username: string
+
+  @column()
+  declare public email: string
 
   @column({ serializeAs: null })
-  declare password: string
+  declare public password: string
 
   @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime
+  declare public createdAt: DateTime
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null
+  declare public updatedAt: DateTime | null
 
   /**
    * The access token provider for the user model.

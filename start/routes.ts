@@ -10,6 +10,7 @@ import './routes/health.js'
  * Routes métiers
  */
 import './routes/aetherroyale_auth.js'
+import './routes/aetherroyale_agones.js'
 
 /**
  * Cette route est utilisée pour tester le fonctionnement de base de l'application.

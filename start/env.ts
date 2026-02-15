@@ -29,4 +29,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   HEALTH_API_KEY_SECRET: Env.schema.string(),
   API_USER_TOKEN_EXPIRATION: Env.schema.string(),
   API_USER_TOKEN_SECRET_LENGTH: Env.schema.number(),
+  AGONES_ALLOCATOR_ENDPOINT_GRPC: Env.schema.string(),
+  AGONES_GAMESERVERS_NAMESPACE: Env.schema.string(),
+  AGONES_FLEET_NAME: Env.schema.string(),
 })

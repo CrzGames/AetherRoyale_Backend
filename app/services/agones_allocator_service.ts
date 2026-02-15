@@ -112,7 +112,7 @@ const request: AllocationRequest = {
  */
 client.Allocate(request, (err: grpc.ServiceError | null, response: AllocationResponse__Output): void => {
   if (err) {
-    logger.error('Agones allocation error:' + err)
+    logger.error({ err }, 'Agones allocation error')
     return
   }
 
@@ -130,5 +130,5 @@ client.Allocate(request, (err: grpc.ServiceError | null, response: AllocationRes
    * Le client jeu n’utilisera PAS cette adresse.
    * Il se connectera au LoadBalancer Quilkin à la place.
    */
-  logger.info('Allocated GameServer:', response)
+  logger.info({ response }, 'Allocated GameServer')
 })

@@ -13,9 +13,9 @@ Cette section explique comment intégrer **Agones Allocator (gRPC)** dans le bac
 Le fichier `allocation.proto` d’Agones dépend d’autres fichiers `.proto` (google/api et grpc-gateway).
 Plutôt que de copier ces fichiers manuellement depuis plusieurs sources, on utilise **directement ceux fournis par le dépôt Agones**, afin de garantir :
 
-* La compatibilité avec la version exacte d’Agones utilisée
-* Aucun décalage de version
-* Une reproductibilité simple
+- La compatibilité avec la version exacte d’Agones utilisée
+- Aucun décalage de version
+- Une reproductibilité simple
 
 ### Étape 1 — Cloner Agones avec ses submodules
 

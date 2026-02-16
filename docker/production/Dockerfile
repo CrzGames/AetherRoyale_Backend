@@ -21,6 +21,9 @@ WORKDIR /app
 # Copy the build from the previous stage
 COPY --from=builder /app/build /app
 
+# Copier le dossier "agones-allocator" avec tous ses fichiers
+COPY --from=builder /app/agones-allocator /app/agones-allocator
+
 # ARG pour sélectionner l'env (default: development-remote)
 ARG AETHERROYALE_ENV=production
 ENV AETHERROYALE_ENV=${AETHERROYALE_ENV}

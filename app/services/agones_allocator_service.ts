@@ -78,7 +78,7 @@ const generateMatchToken: () => string = (): string => {
  *   import "google/api/annotations.proto";
  *   import "protoc-gen-openapiv2/options/annotations.proto";
  */
-const allocationDir = path.join(process.cwd(), 'agones-allocator', 'proto', 'allocation')
+const allocationDir: string = path.join(process.cwd(), 'agones-allocator', 'proto', 'allocation')
 
 /**
  * Chemin absolu vers le proto principal de l'Agones Allocator.

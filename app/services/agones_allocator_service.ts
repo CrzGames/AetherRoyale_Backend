@@ -50,23 +50,47 @@ const generateMatchToken: () => string = (): string => {
 }
 
 /**
- * Structure du projet attendue :
+ * Répertoire racine contenant les fichiers .proto de l'Agones Allocator.
  *
- * MonProjet/
- * ├─ agones-allocator/
- * │   └─ proto/
- * │       └─ allocation/
- * │           └─ allocation.proto
+ * On se base sur process.cwd() car :
+ * - En local comme en Docker, le backend est lancé depuis la racine du projet.
+ * - Dans le container, le projet est monté sous /app, donc :
+ *     process.cwd() === "/app"
  *
- * On pointe vers le fichier proto officiel d’Agones.
+ * Structure attendue :
+ *
+ * /app/
+ * └─ agones-allocator/
+ *    └─ proto/
+ *       └─ allocation/
+ *          ├─ allocation.proto
+ *          ├─ google/
+ *          │   └─ api/
+ *          │       ├─ annotations.proto
+ *          │       └─ http.proto
+ *          └─ protoc-gen-openapiv2/
+ *              └─ options/
+ *                  ├─ annotations.proto
+ *                  └─ openapiv2.proto
+ *
+ * Ce dossier est utilisé comme racine d'import pour @grpc/proto-loader
+ * via l'option `includeDirs`, afin de résoudre correctement :
+ *   import "google/api/annotations.proto";
+ *   import "protoc-gen-openapiv2/options/annotations.proto";
  */
-const protoPath: string = path.join(
-  process.cwd(),
-  'agones-allocator',
-  'proto',
-  'allocation',
-  'allocation.proto', // Proto officiel Agones 1.55.0
-)
+const allocationDir = path.join(process.cwd(), 'agones-allocator', 'proto', 'allocation')
+
+/**
+ * Chemin absolu vers le proto principal de l'Agones Allocator.
+ *
+ * Ce fichier définit :
+ * - Le service gRPC AllocationService
+ * - Les messages AllocationRequest / AllocationResponse
+ *
+ * Il est chargé par @grpc/proto-loader, qui résout ensuite automatiquement
+ * les imports internes grâce à includeDirs: [allocationDir].
+ */
+const protoPath: string = path.join(allocationDir, 'allocation.proto')
 
 /**
  * Charge le fichier .proto et le transforme en définition exploitable par gRPC.
@@ -79,6 +103,9 @@ const protoPath: string = path.join(
  * - oneofs: true → support des unions proto3
  */
 const packageDefinition: protoLoader.PackageDefinition = protoLoader.loadSync(protoPath, {
+  // 👇 IMPORTANT : on dit à proto-loader où chercher les imports ("google/...", "protoc-gen-openapiv2/...")
+  includeDirs: [allocationDir],
+
   keepCase: true,
   longs: String,
   enums: String,

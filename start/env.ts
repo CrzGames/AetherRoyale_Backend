@@ -34,4 +34,13 @@ export default await Env.create(new URL('../', import.meta.url), {
   AGONES_FLEET_NAME: Env.schema.string(),
   QUILKIN_DNS: Env.schema.string(),
   QUILKIN_PORT: Env.schema.number(),
+  DRIVE_DISK: Env.schema.enum(['s3'] as const),
+  S3_BUCKET_OVH_ACCESS_KEY_ID: Env.schema.string(),
+  S3_BUCKET_OVH_SECRET_ACCESS_KEY: Env.schema.string(),
+  S3_BUCKET_OVH_REGION: Env.schema.string(),
+  S3_BUCKET_OVH_NAME: Env.schema.string(),
+  S3_BUCKET_OVH_VISIBILITY: Env.schema.enum(['public', 'private'] as const),
+  S3_BUCKET_OVH_ENDPOINT: Env.schema.string(),
+  S3_BUCKET_OVH_LIST_FILES_GAMECLIENT_AETHER_ROYALE: Env.schema.string(),
+  S3_BUCKET_OVH_SIGNED_URL_EXPIRES_SECONDS: Env.schema.number(),
 })

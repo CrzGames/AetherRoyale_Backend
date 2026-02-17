@@ -12,6 +12,7 @@ import './routes/health.js'
 import './routes/aetherroyale_auth.js'
 import './routes/aetherroyale_agones.js'
 import './routes/aetherroyale_s3.js'
+import './routes/aetherroyale_matchmaking.js'
 
 /**
  * Cette route est utilisée pour tester le fonctionnement de base de l'application.

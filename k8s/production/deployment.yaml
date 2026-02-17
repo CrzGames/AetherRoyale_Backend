@@ -31,8 +31,8 @@ spec:
               value: '3333'
           resources:
             requests:
-              cpu: "50m"
-              memory: "256Mi"
+              cpu: "10m"
+              memory: "160Mi"
             limits:
               cpu: "400m"
               memory: "768Mi"

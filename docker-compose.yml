@@ -10,16 +10,42 @@ services:
       - .:/app
       - node_modules:/app/node_modules
     ports:
-      - '3400:3400'
+      - "3400:3400"
     depends_on:
       - db_mariadb
-      - phpmyadmin2
+      - redis
+    networks:
+      - app-network
+
+  redis:
+    container_name: redis
+    image: redis:8.6
+    restart: always
+    ports:
+      - "6379:6379"
+    # Sans password (staging/dev local)
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+  redisinsight:
+    container_name: redisinsight
+    image: redis/redisinsight:latest
+    restart: always
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+    volumes:
+      - redisinsight_data:/data
     networks:
       - app-network
 
   db_mariadb:
     container_name: db_mariadb
-    image: mariadb:latest
+    image: mariadb:12.2.2
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -27,7 +53,7 @@ services:
       MYSQL_USER: testuser
       MYSQL_PASSWORD: testpassword
     ports:
-      - '3307:3306'
+      - "3307:3306"
     volumes:
       - database_data:/var/lib/mysql
     networks:
@@ -42,7 +68,9 @@ services:
       PMA_USER: root
       PMA_PASSWORD: root
     ports:
-      - '7200:80'
+      - "7200:80"
+    depends_on:
+      - db_mariadb
     networks:
       - app-network
 
@@ -51,5 +79,6 @@ networks:
 
 volumes:
   database_data:
-  app:
   node_modules:
+  redis_data:
+  redisinsight_data:

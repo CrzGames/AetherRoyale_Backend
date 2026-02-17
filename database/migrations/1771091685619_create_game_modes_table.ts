@@ -35,7 +35,7 @@ export default class extends BaseSchema {
        * Cette valeur correspond directement au choix dans le menu du jeu :
        * - Solo
        * - Duo
-       * - Quatre
+       * - Squad
        *
        * Elle est utilisée côté backend pour :
        * - Identifier la bonne file de matchmaking
@@ -48,10 +48,9 @@ export default class extends BaseSchema {
        * Nom lisible côté interface utilisateur.
        *
        * Exemples :
-       * - "Solo non classé"
-       * - "Solo classé"
-       * - "Duo non classé"
-       * - "Squad classé"
+       * - "Solo"
+       * - "Duo"
+       * - "Squad"
        *
        * Ce champ est utilisé uniquement pour l'affichage :
        * - Menu principal du jeu

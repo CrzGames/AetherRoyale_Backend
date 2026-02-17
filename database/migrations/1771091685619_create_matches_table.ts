@@ -24,13 +24,7 @@ export default class extends BaseSchema {
        * - Faire des statistiques par mode (solo non classé, duo classé, etc.)
        * - Filtrer l’historique de matchs d’un joueur par mode
        */
-      table
-        .integer('game_mode_id')
-        .unsigned()
-        .notNullable()
-        .references('id')
-        .inTable('game_modes')
-        .onDelete('RESTRICT')
+      table.integer('game_mode_id').unsigned().notNullable().references('id').inTable('game_modes').onDelete('RESTRICT')
 
       /**
        * Nom du GameServer Agones alloué pour ce match.
@@ -102,16 +96,14 @@ export default class extends BaseSchema {
       /**
        * Date/heure de démarrage de la partie.
        *
-       * Représente le moment où la partie est considérée "commencée" côté gameplay.
-       * Par exemple :
-       * - après la phase de lobby/warmup
-       * - au lancement du Battle Royale (début de la zone / spawn / drop)
+       * Représente le moment où le match a réellement commencé, c'est-à-dire :
+       * - le GameServer a été alloué et est prêt
+       * - les joueurs ont été téléportés dans la partie
        *
-       * Important :
-       * - Ce timestamp doit rester cohérent pour toutes les parties,
-       *   car il sert de base à la durée du match et aux analytics.
+       * Valeur NULL si :
+       * - la partie n'a pas encore commencé (match en préparation)
        */
-      table.timestamp('started_at').notNullable()
+      table.timestamp('started_at').nullable()
 
       /**
        * Date/heure de fin de la partie.

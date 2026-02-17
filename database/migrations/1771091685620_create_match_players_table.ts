@@ -21,13 +21,7 @@ export default class extends BaseSchema {
        * - CASCADE : si un match est supprimé, toutes ses lignes `match_players` sont supprimées aussi,
        *   car elles n'ont aucun sens sans leur match.
        */
-      table
-        .integer('match_id')
-        .unsigned()
-        .notNullable()
-        .references('id')
-        .inTable('matches')
-        .onDelete('CASCADE')
+      table.integer('match_id').unsigned().notNullable().references('id').inTable('matches').onDelete('CASCADE')
 
       /**
        * Référence vers l'utilisateur ayant participé au match.
@@ -43,13 +37,7 @@ export default class extends BaseSchema {
        * - CASCADE : si un utilisateur est supprimé (cas rare), on supprime aussi ses stats de matchs
        *   pour garder l'intégrité des données.
        */
-      table
-        .integer('user_id')
-        .unsigned()
-        .notNullable()
-        .references('id')
-        .inTable('users')
-        .onDelete('CASCADE')
+      table.integer('user_id').unsigned().notNullable().references('id').inTable('users').onDelete('CASCADE')
 
       /**
        * Placement final du joueur dans la partie.

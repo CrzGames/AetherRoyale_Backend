@@ -45,5 +45,5 @@ export default await Env.create(new URL('../', import.meta.url), {
   S3_BUCKET_OVH_SIGNED_URL_EXPIRES_SECONDS: Env.schema.number(),
   REDIS_HOST: Env.schema.string({ format: 'host' }),
   REDIS_PORT: Env.schema.number(),
-  REDIS_PASSWORD: Env.schema.string.optional()
+  REDIS_PASSWORD: Env.schema.string.optional(),
 })

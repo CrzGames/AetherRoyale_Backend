@@ -10,7 +10,7 @@ services:
       - .:/app
       - node_modules:/app/node_modules
     ports:
-      - "3400:3400"
+      - '3400:3400'
     depends_on:
       - db_mariadb
       - redis
@@ -22,9 +22,9 @@ services:
     image: redis:8.6
     restart: always
     ports:
-      - "6379:6379"
+      - '6379:6379'
     # Sans password (staging/dev local)
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ['redis-server', '--appendonly', 'yes']
     volumes:
       - redis_data:/data
     networks:
@@ -35,7 +35,7 @@ services:
     image: redis/redisinsight:latest
     restart: always
     ports:
-      - "5540:5540"
+      - '5540:5540'
     depends_on:
       - redis
     volumes:
@@ -53,7 +53,7 @@ services:
       MYSQL_USER: testuser
       MYSQL_PASSWORD: testpassword
     ports:
-      - "3307:3306"
+      - '3307:3306'
     volumes:
       - database_data:/var/lib/mysql
     networks:
@@ -68,7 +68,7 @@ services:
       PMA_USER: root
       PMA_PASSWORD: root
     ports:
-      - "7200:80"
+      - '7200:80'
     depends_on:
       - db_mariadb
     networks:

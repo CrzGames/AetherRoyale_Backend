@@ -24,7 +24,7 @@ export default class Match extends BaseModel {
   declare public status: 'finished' | 'aborted' | 'crashed'
 
   @column.dateTime()
-  declare public started_at: DateTime
+  declare public started_at: DateTime | null
 
   @column.dateTime()
   declare public ended_at: DateTime | null

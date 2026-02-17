@@ -75,7 +75,9 @@ git clone git@github.com:CrzGames/AetherRoyale_Backend.git
 ```bash
    # Start the development server on http://localhost:3400 (AdonisJS)
    # Start the development server on http://localhost:7200 (phpmyadmin)
+   # Start the development server on http://localhost:5540 (RedisInsight)
    # Start MariaDB port is : 3307
+   # Start Redis port is : 6379
    npm install # just for the idea
    npm run dev:docker
 ```

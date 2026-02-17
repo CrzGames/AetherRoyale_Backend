@@ -8,9 +8,7 @@ import type { SignUpRequestBody, SingInRequestBody } from '#interfaces/auth_requ
  * @property {string} password - Le mot de passe de l'utilisateur
  * @property {string} ipAddress - L'adresse IP de l'utilisateur
  */
-export interface SingInData extends SingInRequestBody {
-  ipAddress: string
-}
+export interface SingInData extends SingInRequestBody {}
 
 /**
  * Interface représentant les données d'inscription d'un utilisateur

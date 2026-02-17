@@ -81,11 +81,10 @@ export default class AuthController {
     const signIn: SingInData = {
       email: payload.email,
       password: payload.password,
-      ipAddress: request.ip(),
     }
 
     // Log de la tentative de connexion avec email/password et check IP
-    logger.info({ email: signIn.email, ip: signIn.ipAddress }, 'SignIn attempt')
+    logger.info({ email: signIn.email }, 'SignIn attempt')
 
     // Appeler le service Auth pour authentifier l'utilisateur
     const signInResponse: LoginSuccessResponseBody = await AuthService.signIn(signIn, auth)

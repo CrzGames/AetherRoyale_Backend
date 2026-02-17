@@ -38,11 +38,11 @@ export const http = defineConfig({
     sameSite: 'lax',
   },
 
-  getIp(request: any): string {
+  /*getIp(request: any): string {
     // Utilise 'x-real-ip' via Nginx pour obtenir l'adresse IP réelle du client
     return request.header('x-real-ip') || request.ip()
-  },
+  },*/
 
   // Activer la confiance du proxy (nginx, loadbalancer..)
-  trustProxy: true,
+  //trustProxy: true,
 })

@@ -9,7 +9,7 @@ export default class extends BaseSeeder {
         username: 'dev_player',
         email: 'dev@aetherroyale.com',
         password: 'password123', // sera hashé auto par le modèle User
-      }
+      },
     )
   }
 }

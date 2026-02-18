@@ -230,7 +230,7 @@ export class MatchmakingRedisService {
   }
 
   /**
-   * Annule la recherche en cours (sans payload).
+   * Annule la recherche en cours.
    *
    * - Lit le modeKey depuis mm:user_queue:<userId>
    * - LREM pour retirer le userId de la LIST

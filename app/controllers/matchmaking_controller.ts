@@ -36,13 +36,30 @@ export default class MatchmakingController {
     // Générer le ModeKey à partir du payload
     const modeKey: ModeKey = MatchmakingRedisService.makeModeKey(payload.queue_type, payload.team_size)
 
-    // Enqueue le joueur dans la file d'attente Redis
-    await MatchmakingRedisService.enqueuePlayer(modeKey, auth.user!.id)
+    // Ajouter le joueur à la file d'attente Redis
+    const added: boolean = await MatchmakingRedisService.enqueuePlayer(modeKey, auth.user!.id)
 
-    // Répondre avec un message de succès
-    // (202 Accepted indique que la requête a été acceptée pour traitement, mais que le traitement n'est pas encore terminé)
-    response.status(202).json({
-      message: `Rejoint la file d'attente pour ${modeKey}`,
+    // Si le joueur était déjà en recherche pour ce mode, on retourne un message d'info
+    if (!added) {
+      response.status(200).json({ message: 'Déjà en recherche d’une partie' })
+      return
+    }
+
+    // Sinon, on confirme que le joueur a été ajouté à la file d'attente
+    response.status(202).json({ message: `Rejoint la file d'attente pour ${modeKey}` })
+  }
+
+  // TODO: Faire la doc JSDOC + Swagger de cette route
+  /**
+   *
+   */
+  public async matchmakingCancel({ response, auth }: HttpContext): Promise<void> {
+    // Annuler la recherche de partie du joueur dans Redis
+    const cancelled: boolean = await MatchmakingRedisService.cancelSearch(auth.user!.id)
+
+    // Répondre avec un message de succès ou d'info
+    response.status(200).json({
+      message: cancelled ? 'Recherche annulée' : 'Pas de recherche active',
     })
   }
 }

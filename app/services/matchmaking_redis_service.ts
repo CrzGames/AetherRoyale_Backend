@@ -150,12 +150,27 @@ const keyJoinable: (modeKey: ModeKey) => string = (modeKey: ModeKey): string => 
 const keyMatch: (matchId: MatchId) => string = (matchId: MatchId): string => `mm:match:${matchId}`
 
 /**
+ * Clé qui indique dans quelle queue un user est actuellement (1 seul matchmaking actif).
+ *
+ * mm:user_queue:<userId> = "<modeKey>"
+ */
+const keyUserQueue: (userId: UserId) => string = (userId: UserId): string => `mm:user_queue:${userId}`
+
+/**
+ * TTL pour l'état "en recherche".
+ * Si crash / déco / bug client, on nettoie automatiquement.
+ *
+ * 15 minutes = 900 secondes
+ */
+const TTL_USER_QUEUE_SECONDS: number = 900
+
+/**
  * TTL appliqué au hash runtime d’un match.
  * Permet de nettoyer automatiquement Redis après la fin.
  *
- * 6h = large, tu pourras réduire plus tard.
+ * 60 minutes = 3600 secondes
  */
-const TTL_MATCH_SECONDS: number = 21600
+const TTL_MATCH_SECONDS: number = 3600
 
 /**
  * Service de matchmaking runtime basé sur Redis.
@@ -189,15 +204,56 @@ export class MatchmakingRedisService {
   /**
    * Ajoute un joueur dans la queue d’attente (LIST) du mode.
    *
-   * - RPUSH pour avoir un comportement FIFO simple (first in, first out)
+   * Variante "Fortnite-like" :
+   * - 1 seul matchmaking actif par user (tous modes confondus)
+   * - idempotent : si déjà en recherche, on ne le remet pas 10 fois
    *
-   * @param modeKey ModeKey du joueur (ex: "unranked:1")
-   * @param userId  Identifiant utilisateur (Adonis users.id)
+   * @returns true si ajouté, false si déjà en recherche
    */
-  public static async enqueuePlayer(modeKey: ModeKey, userId: UserId): Promise<void> {
+  public static async enqueuePlayer(modeKey: ModeKey, userId: UserId): Promise<boolean> {
     const queueKey: string = keyQueue(modeKey)
     const userIdStr: string = String(userId)
+
+    const userQueueKey: string = keyUserQueue(userId)
+
+    // Bloque le spam + empêche d'être dans plusieurs modes en même temps
+    const ok: string | null = await redis.set(userQueueKey, modeKey, 'EX', TTL_USER_QUEUE_SECONDS, 'NX')
+
+    if (ok === null) {
+      // Déjà en recherche → on refresh le TTL pour prolonger la session
+      await redis.expire(userQueueKey, TTL_USER_QUEUE_SECONDS)
+      return false
+    }
+
     await redis.rpush(queueKey, userIdStr)
+    return true
+  }
+
+  /**
+   * Annule la recherche en cours (sans payload).
+   *
+   * - Lit le modeKey depuis mm:user_queue:<userId>
+   * - LREM pour retirer le userId de la LIST
+   * - DEL pour supprimer l'état "en recherche"
+   *
+   * @returns true si annulé, false si aucune recherche active
+   */
+  public static async cancelSearch(userId: UserId): Promise<boolean> {
+    const userQueueKey: string = keyUserQueue(userId)
+    const modeKeyStr: string | null = await redis.get(userQueueKey)
+
+    if (modeKeyStr === null) return false
+
+    const modeKey: ModeKey = modeKeyStr as ModeKey
+    const queueKey: string = keyQueue(modeKey)
+
+    // Retire toutes les occurrences (sécurité)
+    await redis.lrem(queueKey, 0, String(userId))
+
+    // Supprime l'état "en recherche"
+    await redis.del(userQueueKey)
+
+    return true
   }
 
   /**
@@ -244,16 +300,20 @@ export class MatchmakingRedisService {
       created_at_ms: String(nowMs),
     }
 
-    /**
-     * On utilise HSET avec un objet (multi-field).
-     * @adonisjs/redis est un wrapper ioredis : la Command API est identique.
-     */
     await redis.hset(matchKey, matchHash)
 
     await redis.expire(matchKey, TTL_MATCH_SECONDS)
 
-    // ZSET score = players_count => on peut récupérer le plus rempli avec ZREVRANGE
-    await redis.zadd(joinableKey, playersCount, String(params.matchId))
+    // Set to 'starting' if already at or above minPlayers
+    if (playersCount >= params.minPlayers) {
+      await redis.hset(matchKey, 'status', 'starting')
+      await redis.hset(matchKey, 'started_at_ms', String(nowMs))
+    }
+
+    // Only add to ZSET if not already full
+    if (playersCount < params.maxPlayers) {
+      await redis.zadd(joinableKey, playersCount, String(params.matchId))
+    }
   }
 
   /**
@@ -284,11 +344,30 @@ export class MatchmakingRedisService {
 
     const userId: UserId = Number(userIdStr)
 
+    const activeModeKey: string | null = await redis.get(keyUserQueue(userId))
+    if (activeModeKey === null) {
+      // cancel / TTL expiré => on drop
+      return null
+    }
+
+    if (activeModeKey !== modeKey) {
+      const activeModeKeyStr = activeModeKey as ModeKey
+      // sécurité: enlever toute trace dans la queue où on l'a pop
+      await redis.lrem(queueKey, 0, userIdStr)
+      // le remettre dans la queue correspondant à son état actuel
+      await redis.rpush(keyQueue(activeModeKeyStr), userIdStr)
+      // Refresh TTL "en recherche" (évite expiration si ça dure)
+      await redis.expire(keyUserQueue(userId), TTL_USER_QUEUE_SECONDS)
+      return null
+    }
+
     // 2) Prendre le match joinable le plus plein
     const best: string[] = await redis.zrevrange(joinableKey, 0, 0)
     if (best.length === 0) {
       // Aucun match joinable => on remet le joueur dans la queue pour retenter plus tard
-      await redis.lpush(queueKey, userIdStr)
+      await redis.rpush(queueKey, userIdStr)
+      // Refresh TTL "en recherche" (évite expiration si ça dure)
+      await redis.expire(keyUserQueue(userId), TTL_USER_QUEUE_SECONDS)
       return null
     }
 
@@ -315,7 +394,8 @@ export class MatchmakingRedisService {
 
     // 4) Validation
     if (
-      status !== 'joinable' ||
+      status === null ||
+      !(status === 'joinable' || status === 'starting') ||
       playersCountStr === null ||
       minPlayersStr === null ||
       maxPlayersStr === null ||
@@ -325,7 +405,9 @@ export class MatchmakingRedisService {
       // Match invalide => on le retire du joinable (évite de le reprendre en boucle)
       // et on remet le joueur en queue.
       await redis.zrem(joinableKey, String(matchId))
-      await redis.lpush(queueKey, userIdStr)
+      await redis.lrem(queueKey, 0, userIdStr)
+      await redis.rpush(queueKey, userIdStr)
+      await redis.expire(keyUserQueue(userId), TTL_USER_QUEUE_SECONDS)
       return null
     }
 
@@ -336,19 +418,22 @@ export class MatchmakingRedisService {
     // Si déjà plein (incohérence possible), on purge et requeue
     if (playersCount >= maxPlayers) {
       await redis.zrem(joinableKey, String(matchId))
-      await redis.lpush(queueKey, userIdStr)
+      await redis.lrem(queueKey, 0, userIdStr)
+      await redis.rpush(queueKey, userIdStr)
+      await redis.expire(keyUserQueue(userId), TTL_USER_QUEUE_SECONDS)
       return null
     }
 
     // 5) Ajouter le joueur au match
     const newCount: number = await redis.hincrby(matchKey, 'players_count', 1)
 
-    // 6) Mettre à jour le score du ZSET (plus plein = plus prioritaire)
-    await redis.zadd(joinableKey, newCount, String(matchId))
-
-    // 7) Si plein => plus joinable
+    // 6/7) Mettre à jour le ZSET uniquement si le match reste joinable
     if (newCount >= maxPlayers) {
+      // Match plein => ne doit plus être dans joinable
       await redis.zrem(joinableKey, String(matchId))
+    } else {
+      // Match encore joinable => on met à jour son score
+      await redis.zadd(joinableKey, newCount, String(matchId))
     }
 
     // 8) Seuil min atteint => match "startable"
@@ -371,6 +456,9 @@ export class MatchmakingRedisService {
       minPlayers,
       maxPlayers,
     }
+
+    // Le joueur n'est plus "en recherche" une fois assigné à un match, on peut supprimer la clé de suivi.
+    await redis.del(keyUserQueue(userId))
 
     return result
   }

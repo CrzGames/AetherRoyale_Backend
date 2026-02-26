@@ -25,7 +25,7 @@ export default {
   debug: env.get('NODE_ENV') === 'development', // Affiche les logs de débogage pour le développement
 
   // Routes à ignorer
-  ignore: ['/swagger', '/docs', '/'],
+  ignore: ['/swagger', '/docs', '/', '/health'],
 
   // Méthode préférée si PUT/PATCH sont tous deux définis
   preferredPutPatch: 'PUT',

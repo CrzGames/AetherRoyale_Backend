@@ -88,48 +88,73 @@ export default class S3Service {
     platform: string | null
     arch: string | null
     filename: string
-  } {
-    const filename: string = key.split('/').pop() ?? key
+  } 
+  {
+    const parts = key.split('/').filter(Boolean)
+    const filename = parts.at(-1) ?? key
 
-    // Staging
-    // Exemple filename: aetherroyale-windows-x64-1.0.0-staging-8944693.zip
-    let m: RegExpMatchArray | null = filename.match(
-      /^aetherroyale-(?<platform>[a-z0-9]+)-(?<arch>[a-z0-9]+)-(?<version>\d+\.\d+\.\d+)-staging-(?<sha>[0-9a-f]{7,40})\.zip$/i,
+    const envIndex = parts.findIndex((p) => p === 'staging' || p === 'production')
+    const environment = envIndex >= 0 ? (parts[envIndex] as 'staging' | 'production') : null
+
+    let version: string | null = null
+    let commitSha: string | null = null
+    const releaseFolder = envIndex >= 0 ? (parts[envIndex + 1] ?? null) : null
+
+    if (environment === 'staging' && releaseFolder) {
+      const m = releaseFolder.match(/^(?<version>\d+\.\d+\.\d+)-staging-(?<sha>[0-9a-f]{7,40})$/i)
+      if (m?.groups) {
+        version = m.groups.version ?? null
+        commitSha = m.groups.sha ?? null
+      }
+    } else if (environment === 'production' && releaseFolder) {
+      const m = releaseFolder.match(/^(?<version>\d+\.\d+\.\d+)$/i)
+      if (m?.groups) version = m.groups.version ?? null
+    }
+
+    // 1) Format "2 segments": <name>-<platform>-<arch>-<version>(-staging-<sha>).zip
+    const stagingFile2 = filename.match(
+      /-(?<platform>[a-z0-9]+)-(?<arch>[a-z0-9]+)-(?<v>\d+\.\d+\.\d+)-staging-(?<sha>[0-9a-f]{7,40})\.zip$/i,
     )
-    if (m?.groups) {
-      return {
-        environment: 'staging',
-        version: m.groups.version,
-        commitSha: m.groups.sha,
-        platform: m.groups.platform,
-        arch: m.groups.arch,
-        filename,
-      }
+    const prodFile2 = filename.match(
+      /-(?<platform>[a-z0-9]+)-(?<arch>[a-z0-9]+)-(?<v>\d+\.\d+\.\d+)\.zip$/i,
+    )
+
+    // 2) Format mobile "1 segment": <name>-<platform>-<version>(-staging-<sha>).zip  (platform=android|ios)
+    const stagingFile1 = filename.match(
+      /-(?<platform>android|ios)-(?<v>\d+\.\d+\.\d+)-staging-(?<sha>[0-9a-f]{7,40})\.zip$/i,
+    )
+    const prodFile1 = filename.match(
+      /-(?<platform>android|ios)-(?<v>\d+\.\d+\.\d+)\.zip$/i,
+    )
+
+    let platform: string | null = null
+    let arch: string | null = null
+
+    if (stagingFile1?.groups) {
+      platform = stagingFile1.groups.platform ?? null
+      arch = null
+      version = version ?? stagingFile1.groups.v ?? null
+      commitSha = commitSha ?? stagingFile1.groups.sha ?? null
+    } else if (prodFile1?.groups) {
+      platform = prodFile1.groups.platform ?? null
+      arch = null
+      version = version ?? prodFile1.groups.v ?? null
+    } else if (stagingFile2?.groups) {
+      platform = stagingFile2.groups.platform ?? null
+      arch = stagingFile2.groups.arch ?? null
+      version = version ?? stagingFile2.groups.v ?? null
+      commitSha = commitSha ?? stagingFile2.groups.sha ?? null
+    } else if (prodFile2?.groups) {
+      platform = prodFile2.groups.platform ?? null
+      arch = prodFile2.groups.arch ?? null
+      version = version ?? prodFile2.groups.v ?? null
     }
 
-    // Production
-    // Exemple filename: aetherroyale-windows-x64-1.0.0.zip
-    m = filename.match(/^aetherroyale-(?<platform>[a-z0-9]+)-(?<arch>[a-z0-9]+)-(?<version>\d+\.\d+\.\d+)\.zip$/i)
-    if (m?.groups) {
-      return {
-        environment: 'production',
-        version: m.groups.version,
-        commitSha: null,
-        platform: m.groups.platform,
-        arch: m.groups.arch,
-        filename,
-      }
-    }
+    // LOG TEMPORAIRE: à enlever après
+    // eslint-disable-next-line no-console
+    console.log('[parseKey]', { key, environment, releaseFolder, version, commitSha, platform, arch })
 
-    // Fallback (clé non conforme / autre fichier)
-    return {
-      environment: null,
-      version: null,
-      commitSha: null,
-      platform: null,
-      arch: null,
-      filename,
-    }
+    return { environment, version, commitSha, platform, arch, filename }
   }
 
   /**

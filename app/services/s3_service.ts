@@ -5,8 +5,8 @@ import type { ListObjectsV2CommandOutput, _Object } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 /**
- * Service pour interagir avec OVH Object Storage (compatible S3) pour gérer les fichiers de builds de clients de jeu
- * Ce service utilise le SDK AWS pour S3, configuré pour fonctionner avec OVH Object Storage
+ * Service pour interagir avec OVH Object Storage (S3 compatible)
+ * Liste les builds Game Client (staging/production) + URLs signées.
  */
 export default class S3Service {
   /**
@@ -28,73 +28,248 @@ export default class S3Service {
 
   /**
    * Préfixe pour lister les fichiers des builds de clients de jeu dans le bucket OVH
+   * Ex: "gameclient-aetherroyale/binaries"
    */
-  private static readonly prefix = env.get('S3_BUCKET_OVH_LIST_FILES_GAMECLIENT_AETHER_ROYALE')
+  private static readonly basePrefix = env.get('S3_BUCKET_OVH_LIST_FILES_GAMECLIENT_AETHER_ROYALE')
 
   /**
    * Durée d'expiration des URLs de téléchargement signées, en secondes.
    */
-  private static readonly signedUrlExpiresIn = env.get('S3_BUCKET_OVH_SIGNED_URL_EXPIRES_SECONDS')
+  private static readonly signedUrlExpiresIn = ((): number => {
+    const raw: number = env.get('S3_BUCKET_OVH_SIGNED_URL_EXPIRES_SECONDS')
+    const n: number = Number.parseInt(String(raw), 10)
+    return Number.isFinite(n) && n > 0 ? n : 3600
+  })()
 
   /**
    * Liste les builds de clients de jeu disponibles dans le bucket OVH, avec des URLs de téléchargement signées
    * @returns {Promise<GameClientBuildFile[]>} Une liste d'objets représentant les fichiers de builds de clients de jeu, avec leurs métadonnées et URLs de téléchargement signées
    */
-  public static async listGameClientBuilds(): Promise<GameClientBuildFile[]> {
-    // Commande pour lister les objets dans le bucket OVH avec le préfixe spécifié
-    const command: ListObjectsV2Command = new ListObjectsV2Command({
-      Bucket: this.bucket, // Nom du bucket OVH
-      Prefix: this.prefix, // Préfixe pour filtrer les fichiers de builds de clients de jeu
+  private static async listAllObjects(prefix: string): Promise<_Object[]> {
+    // Liste tous les objets S3 sous le préfixe donné, en gérant la pagination
+    const out: _Object[] = []
+    let continuationToken: string | undefined = undefined
+
+    do {
+      // Commande pour lister les objets S3 avec pagination
+      const command: ListObjectsV2Command = new ListObjectsV2Command({
+        Bucket: this.bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      })
+
+      // Exécution de la commande et récupération de la réponse
+      const response: ListObjectsV2CommandOutput = await this.client.send(command)
+
+      // Ajout des objets récupérés à la liste finale
+      const contents: _Object[] = response.Contents ?? []
+
+      // Important: on ajoute les résultats de chaque page à la liste finale, au lieu de remplacer la liste à chaque itération
+      out.push(...contents)
+
+      continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined
+    } while (continuationToken)
+
+    return out
+  }
+
+  /**
+   * Parse une clé selon tes 2 conventions:
+   * - staging:  .../staging/<version>-staging-<sha>/aetherroyale-<platform>-<arch>-<version>-staging-<sha>.zip
+   * - prod:     .../production/<version>/aetherroyale-<platform>-<arch>-<version>.zip
+   *
+   * @param {string} key - La clé S3 à parser
+   * @returns {object} Un objet contenant les informations extraites de la clé, ou null si la clé ne correspond à aucune convention
+   */
+  private static parseKey(key: string): {
+    environment: 'staging' | 'production' | null
+    version: string | null
+    commitSha: string | null
+    platform: string | null
+    arch: string | null
+    filename: string
+  } {
+    const filename: string = key.split('/').pop() ?? key
+
+    // Staging
+    // Exemple filename: aetherroyale-windows-x64-1.0.0-staging-8944693.zip
+    let m: RegExpMatchArray | null = filename.match(
+      /^aetherroyale-(?<platform>[a-z0-9]+)-(?<arch>[a-z0-9]+)-(?<version>\d+\.\d+\.\d+)-staging-(?<sha>[0-9a-f]{7,40})\.zip$/i,
+    )
+    if (m?.groups) {
+      return {
+        environment: 'staging',
+        version: m.groups.version,
+        commitSha: m.groups.sha,
+        platform: m.groups.platform,
+        arch: m.groups.arch,
+        filename,
+      }
+    }
+
+    // Production
+    // Exemple filename: aetherroyale-windows-x64-1.0.0.zip
+    m = filename.match(/^aetherroyale-(?<platform>[a-z0-9]+)-(?<arch>[a-z0-9]+)-(?<version>\d+\.\d+\.\d+)\.zip$/i)
+    if (m?.groups) {
+      return {
+        environment: 'production',
+        version: m.groups.version,
+        commitSha: null,
+        platform: m.groups.platform,
+        arch: m.groups.arch,
+        filename,
+      }
+    }
+
+    // Fallback (clé non conforme / autre fichier)
+    return {
+      environment: null,
+      version: null,
+      commitSha: null,
+      platform: null,
+      arch: null,
+      filename,
+    }
+  }
+
+  /**
+   * Génère une URL de téléchargement signée pour un objet S3 donné, en utilisant la commande GetObjectCommand et la fonction getSignedUrl du SDK AWS
+   * @param {string} key - La clé S3 de l'objet pour lequel générer l'URL signée
+   * @returns {Promise<string>} L'URL de téléchargement signée, valide pendant la durée spécifiée dans signedUrlExpiresIn
+   */
+  private static async signGetUrl(key: string): Promise<string> {
+    // Commande pour obtenir l'objet S3 spécifié par la clé
+    const command: GetObjectCommand = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
     })
 
-    // Exécution de la commande pour récupérer la liste des objets
-    const response: ListObjectsV2CommandOutput = await this.client.send(command)
+    // Génération de l'URL de téléchargement signée, avec une expiration définie par signedUrlExpiresIn
+    return getSignedUrl(this.client, command, { expiresIn: this.signedUrlExpiresIn })
+  }
 
-    // Extraction des objets retournés par OVH, en filtrant les dossiers (objets dont la clé se termine par '/')
-    const contents: _Object[] = response.Contents ?? []
+  /**
+   * Liste toutes les builds (staging + production).
+   * - Pas de limite arbitraire.
+   * - Triées du plus récent au plus ancien.
+   * - Robuste si des fichiers/dossiers sont supprimés.
+   *
+   * @returns {Promise<GameClientBuildFile[]>} Une liste d'objets représentant les fichiers de builds de clients de jeu, avec leurs métadonnées et URLs de téléchargement signées
+   */
+  public static async listGameClientBuilds(): Promise<GameClientBuildFile[]> {
+    // On liste sous "gameclient-aetherroyale/binaries/" pour récupérer staging + production en une passe.
 
-    // Pour chaque objet, on génère une URL de téléchargement signée et on extrait les informations pertinentes
-    const files: GameClientBuildFile[] = await Promise.all(
-      contents
-        .filter((o: _Object) => o.Key && !o.Key.endsWith('/'))
-        .map(async (o: _Object): Promise<GameClientBuildFile> => {
-          // Extraction du nom de fichier à partir de la clé de l'objet
-          // Exemple de clé : "clients/staging/gameclient-abc123.zip" -> filename : "gameclient-abc123.zip"
-          const key: string = o.Key!
-          const filename: string = key.split('/').pop()!
+    // Important: s'assurer que le préfixe se termine par "/" pour éviter de récupérer des objets hors du scope (ex: "gameclient-aetherroyale/binaries-old/")
+    const prefix: string = this.basePrefix.endsWith('/') ? this.basePrefix : `${this.basePrefix}/`
 
-          // Extraction du commit SHA à partir du nom de fichier, en supposant qu'il est précédé d'un tiret et suivi de 7 à 40 caractères hexadécimaux
-          // Exemple : "gameclient-staging-abc123.zip" -> commitSha : "abc123"
-          const shaMatch: RegExpMatchArray | null = filename.match(/-([0-9a-f]{7,40})/i)
-          const commitSha: string | null = shaMatch ? shaMatch[1] : null
+    // Récupère tous les objets S3 sous le préfixe donné, en gérant la pagination
+    const objects: _Object[] = await this.listAllObjects(prefix)
 
-          // Génération de l'URL de téléchargement signée pour l'objet
-          const command: GetObjectCommand = new GetObjectCommand({
-            Bucket: this.bucket,
-            Key: key,
-          })
-          const urlSigned: string = await getSignedUrl(this.client, command, {
-            expiresIn: this.signedUrlExpiresIn, // Durée d'expiration de l'URL signée
-          })
+    // Filtre pour ne garder que les fichiers (exclut les "dossiers" qui ont des clés se terminant par "/")
+    const filesOnly: (_Object & {
+      Key: string
+    })[] = objects.filter((o: _Object) => o.Key && !o.Key.endsWith('/')) as Array<_Object & { Key: string }>
 
-          // Construction de l'objet GameClientBuildFile avec les informations extraites et l'URL signée
-          return {
-            filename,
-            commitSha,
+    const builds: GameClientBuildFile[] = await Promise.all(
+      filesOnly.map(
+        async (
+          o: _Object & {
+            Key: string
+          },
+        ) => {
+          const key: string = o.Key
+          const parsed: {
+            environment: 'staging' | 'production' | null
+            version: string | null
+            commitSha: string | null
+            platform: string | null
+            arch: string | null
+            filename: string
+          } = this.parseKey(key)
+
+          const downloadUrl: string = await this.signGetUrl(key)
+
+          const item: GameClientBuildFile = {
+            key,
+            filename: parsed.filename,
+            downloadUrl,
             size: o.Size ?? null,
             lastModified: o.LastModified ?? null,
-            downloadUrl: urlSigned,
+            environment: parsed.environment,
+            version: parsed.version,
+            commitSha: parsed.commitSha,
+            platform: parsed.platform,
+            arch: parsed.arch,
           }
-        }),
+
+          return item
+        },
+      ),
     )
 
-    // tri du plus récent au plus ancien
-    files.sort((a: GameClientBuildFile, b: GameClientBuildFile) =>
-      (b.lastModified?.toISOString() ?? '').localeCompare(a.lastModified?.toISOString() ?? ''),
+    builds.sort((a: GameClientBuildFile, b: GameClientBuildFile) => {
+      const da: number = a.lastModified?.getTime() ?? 0
+      const db: number = b.lastModified?.getTime() ?? 0
+      return db - da
+    })
+
+    return builds
+  }
+
+  /**
+   * Option pratique: lister uniquement staging ou uniquement production
+   * Permet de réduire le nombre d'objets à traiter si on sait qu'on veut que les builds d'un environnement spécifique, et ainsi améliorer les performances.
+   * @param {('staging' | 'production')} environment - L'environnement pour lequel lister les builds (staging ou production)
+   * @returns {Promise<GameClientBuildFile[]>} Une liste d'objets représentant les fichiers de builds de clients de jeu pour l'environnement spécifié, avec leurs métadonnées et URLs de téléchargement signées
+   */
+  public static async listGameClientBuildsByEnv(environment: 'staging' | 'production'): Promise<GameClientBuildFile[]> {
+    const base: string = this.basePrefix.endsWith('/') ? this.basePrefix.slice(0, -1) : this.basePrefix
+    const prefix: string = `${base}/${environment}/`
+
+    const objects: _Object[] = await this.listAllObjects(prefix)
+    const filesOnly: (_Object & {
+      Key: string
+    })[] = objects.filter((o: _Object) => o.Key && !o.Key.endsWith('/')) as Array<_Object & { Key: string }>
+
+    const builds: GameClientBuildFile[] = await Promise.all(
+      filesOnly.map(
+        async (
+          o: _Object & {
+            Key: string
+          },
+        ) => {
+          const key: string = o.Key
+          const parsed: {
+            environment: 'staging' | 'production' | null
+            version: string | null
+            commitSha: string | null
+            platform: string | null
+            arch: string | null
+            filename: string
+          } = this.parseKey(key)
+          const downloadUrl: string = await this.signGetUrl(key)
+
+          return {
+            key,
+            filename: parsed.filename,
+            downloadUrl,
+            size: o.Size ?? null,
+            lastModified: o.LastModified ?? null,
+            environment: parsed.environment,
+            version: parsed.version,
+            commitSha: parsed.commitSha,
+            platform: parsed.platform,
+            arch: parsed.arch,
+          } as GameClientBuildFile
+        },
+      ),
     )
 
-    // Limite aux 15 dernières releases, puis retourne la liste des fichiers de builds de clients de jeu avec leurs métadonnées et URLs de téléchargement signées
-    const MAX_RELEASES: number = 15
-    return files.slice(0, MAX_RELEASES)
+    builds.sort((a: GameClientBuildFile, b: GameClientBuildFile) => {
+      const da: number = a.lastModified?.getTime() ?? 0
+      const db: number = b.lastModified?.getTime() ?? 0
+      return db - da
+    })
+    return builds
   }
 }

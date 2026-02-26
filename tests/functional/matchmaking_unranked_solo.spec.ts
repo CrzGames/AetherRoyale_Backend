@@ -9,8 +9,17 @@ import { MatchmakingRedisService } from '#services/matchmaking_redis_service'
 const MODE_KEY = 'unranked:1'
 const QUEUE_KEY = `mm:queue:${MODE_KEY}`
 const JOINABLE_KEY = `mm:joinable:${MODE_KEY}`
+/**
+ *
+ */
 const USER_QUEUE_KEY = (userId: number) => `mm:user_queue:${userId}`
+/**
+ *
+ */
 const MATCH_KEY = (matchId: number) => `mm:match:${matchId}`
+/**
+ *
+ */
 const keyUserQueue = (userId: number) => `mm:user_queue:${userId}`
 
 /**
@@ -47,10 +56,7 @@ test.group('Matchmaking (functional) - unranked solo', (group) => {
       password: 'password',
     })
 
-    const res = await client
-      .post('/matchmaking/join')
-      .json({ queue_type: 'unranked', team_size: 1 })
-      .loginAs(user)
+    const res = await client.post('/matchmaking/join').json({ queue_type: 'unranked', team_size: 1 }).loginAs(user)
 
     res.assertStatus(202)
     res.assertBodyContains({ message: `Rejoint la file d'attente pour ${MODE_KEY}` })
@@ -68,16 +74,10 @@ test.group('Matchmaking (functional) - unranked solo', (group) => {
       password: 'password',
     })
 
-    const res1 = await client
-      .post('/matchmaking/join')
-      .json({ queue_type: 'unranked', team_size: 1 })
-      .loginAs(user)
+    const res1 = await client.post('/matchmaking/join').json({ queue_type: 'unranked', team_size: 1 }).loginAs(user)
     res1.assertStatus(202)
 
-    const res2 = await client
-      .post('/matchmaking/join')
-      .json({ queue_type: 'unranked', team_size: 1 })
-      .loginAs(user)
+    const res2 = await client.post('/matchmaking/join').json({ queue_type: 'unranked', team_size: 1 }).loginAs(user)
     res2.assertStatus(200)
     res2.assertBodyContains({ message: 'Déjà en recherche d’une partie' })
 
@@ -93,10 +93,7 @@ test.group('Matchmaking (functional) - unranked solo', (group) => {
       password: 'password',
     })
 
-    await client
-      .post('/matchmaking/join')
-      .json({ queue_type: 'unranked', team_size: 1 })
-      .loginAs(user)
+    await client.post('/matchmaking/join').json({ queue_type: 'unranked', team_size: 1 }).loginAs(user)
 
     const cancelRes = await client.post('/matchmaking/cancel').loginAs(user)
     cancelRes.assertStatus(200)
@@ -113,9 +110,21 @@ test.group('Matchmaking (functional) - unranked solo', (group) => {
   // ────────────────────────────────────────────────
 
   test('FIFO : 3 users en queue → popAndAssign respecte l’ordre (FIFO)', async ({ client, assert }) => {
-    const u1 = await User.create({ email: `u1_${Date.now()}@test.local`, username: `u1_${Date.now()}`, password: 'password' })
-    const u2 = await User.create({ email: `u2_${Date.now()}@test.local`, username: `u2_${Date.now()}`, password: 'password' })
-    const u3 = await User.create({ email: `u3_${Date.now()}@test.local`, username: `u3_${Date.now()}`, password: 'password' })
+    const u1 = await User.create({
+      email: `u1_${Date.now()}@test.local`,
+      username: `u1_${Date.now()}`,
+      password: 'password',
+    })
+    const u2 = await User.create({
+      email: `u2_${Date.now()}@test.local`,
+      username: `u2_${Date.now()}`,
+      password: 'password',
+    })
+    const u3 = await User.create({
+      email: `u3_${Date.now()}@test.local`,
+      username: `u3_${Date.now()}`,
+      password: 'password',
+    })
 
     await client.post('/matchmaking/join').json({ queue_type: 'unranked', team_size: 1 }).loginAs(u1)
     await client.post('/matchmaking/join').json({ queue_type: 'unranked', team_size: 1 }).loginAs(u2)
@@ -154,8 +163,16 @@ test.group('Matchmaking (functional) - unranked solo', (group) => {
   })
 
   test('Most-full : assigne toujours au match le plus rempli (ZSET score)', async ({ client, assert }) => {
-    const u1 = await User.create({ email: `u1_${Date.now()}@test.local`, username: `u1_${Date.now()}`, password: 'password' })
-    const u2 = await User.create({ email: `u2_${Date.now()}@test.local`, username: `u2_${Date.now()}`, password: 'password' })
+    const u1 = await User.create({
+      email: `u1_${Date.now()}@test.local`,
+      username: `u1_${Date.now()}`,
+      password: 'password',
+    })
+    const u2 = await User.create({
+      email: `u2_${Date.now()}@test.local`,
+      username: `u2_${Date.now()}`,
+      password: 'password',
+    })
 
     await client.post('/matchmaking/join').json({ queue_type: 'unranked', team_size: 1 }).loginAs(u1)
     await client.post('/matchmaking/join').json({ queue_type: 'unranked', team_size: 1 }).loginAs(u2)
@@ -201,9 +218,21 @@ test.group('Matchmaking (functional) - unranked solo', (group) => {
   })
 
   test('Cancel pendant la queue → utilisateur annulé n’est jamais assigné', async ({ client, assert }) => {
-    const u1 = await User.create({ email: `u1_${Date.now()}@test.local`, username: `u1_${Date.now()}`, password: 'password' })
-    const u2 = await User.create({ email: `u2_${Date.now()}@test.local`, username: `u2_${Date.now()}`, password: 'password' })
-    const u3 = await User.create({ email: `u3_${Date.now()}@test.local`, username: `u3_${Date.now()}`, password: 'password' })
+    const u1 = await User.create({
+      email: `u1_${Date.now()}@test.local`,
+      username: `u1_${Date.now()}`,
+      password: 'password',
+    })
+    const u2 = await User.create({
+      email: `u2_${Date.now()}@test.local`,
+      username: `u2_${Date.now()}`,
+      password: 'password',
+    })
+    const u3 = await User.create({
+      email: `u3_${Date.now()}@test.local`,
+      username: `u3_${Date.now()}`,
+      password: 'password',
+    })
 
     await client.post('/matchmaking/join').json({ queue_type: 'unranked', team_size: 1 }).loginAs(u1)
     await client.post('/matchmaking/join').json({ queue_type: 'unranked', team_size: 1 }).loginAs(u2)
@@ -227,9 +256,7 @@ test.group('Matchmaking (functional) - unranked solo', (group) => {
     const r2 = await MatchmakingRedisService.popAndAssignToMostFullJoinable(MODE_KEY)
     const r3 = await MatchmakingRedisService.popAndAssignToMostFullJoinable(MODE_KEY)
 
-    const assignedIds = [r1, r2, r3]
-      .filter((r): r is NonNullable<typeof r> => r !== null)
-      .map((r) => r.userId)
+    const assignedIds = [r1, r2, r3].filter((r): r is NonNullable<typeof r> => r !== null).map((r) => r.userId)
 
     assert.deepEqual(assignedIds.sort(), [u1.id, u3.id].sort())
     assert.isFalse(assignedIds.includes(u2.id))
@@ -253,10 +280,10 @@ test.group('Matchmaking (functional) - unranked solo', (group) => {
     })
 
     const joinables = await redis.zrange(JOINABLE_KEY, 0, -1)
-    assert.isFalse(joinables.includes(String(matchId)), "Match plein ne doit pas être dans le ZSET")
+    assert.isFalse(joinables.includes(String(matchId)), 'Match plein ne doit pas être dans le ZSET')
 
     const status = await redis.hget(MATCH_KEY(matchId), 'status')
-    assert.equal(status, 'starting', "Match déjà au-dessus du min → starting dès la création")
+    assert.equal(status, 'starting', 'Match déjà au-dessus du min → starting dès la création')
   })
 
   test('Match créé avec playersCount >= minPlayers → passe directement en starting', async ({ assert }) => {
@@ -295,8 +322,8 @@ test.group('Matchmaking (functional) - unranked solo', (group) => {
           email: `u${i}_${Date.now()}@test.local`,
           username: `u${i}_${Date.now()}`,
           password: 'password',
-        })
-      )
+        }),
+      ),
     )
 
     for (const u of users) {

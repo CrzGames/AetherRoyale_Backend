@@ -351,7 +351,8 @@ export class MatchmakingRedisService {
     }
 
     if (activeModeKey !== modeKey) {
-      const activeModeKeyStr = activeModeKey as ModeKey
+      const activeModeKeyStr: 'ranked:4' | 'ranked:1' | 'ranked:2' | 'unranked:4' | 'unranked:1' | 'unranked:2' =
+        activeModeKey as ModeKey
       // sécurité: enlever toute trace dans la queue où on l'a pop
       await redis.lrem(queueKey, 0, userIdStr)
       // le remettre dans la queue correspondant à son état actuel

@@ -3,9 +3,14 @@
  * Ces types sont utilisés pour structurer les données retournées par S3Service.listGameClientBuilds()
  */
 export type GameClientBuildFile = {
+  key: string
   filename: string
-  commitSha: string | null
+  downloadUrl: string
   size: number | null
   lastModified: Date | null
-  downloadUrl: string
+  environment: 'staging' | 'production' | null
+  version: string | null
+  commitSha: string | null // staging uniquement en pratique
+  platform: string | null // windows | linux | macos | ios | android | steamrt4...
+  arch: string | null // x64 | arm64 ...
 }

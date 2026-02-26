@@ -30,6 +30,7 @@ const mainConfig = {
     'app/models/**/*.ts',
     'k8s/**',
     'agones-allocator/**',
+    'tests/**',
   ],
   plugins: {
     '@typescript-eslint': eslintPluginTypeScript,

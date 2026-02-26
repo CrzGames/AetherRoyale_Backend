@@ -49,9 +49,14 @@ export default class MatchmakingController {
     response.status(202).json({ message: `Rejoint la file d'attente pour ${modeKey}` })
   }
 
-  // TODO: Faire la doc JSDOC + Swagger de cette route
   /**
-   *
+   * @MatchmakingCancel
+   * @operationId matchmakingCancel
+   * @tag Matchmaking
+   * @summary Annuler la recherche de partie de matchmaking
+   * @description Gère les requêtes d'annulation de la recherche de partie de matchmaking
+   * @responseBody 200 - <SuccessResponseBody> - Annule la recherche de partie de matchmaking
+   * @responseBody 500 - <ErrorResponseBody> - Erreur interne du serveur
    */
   public async matchmakingCancel({ response, auth }: HttpContext): Promise<void> {
     // Annuler la recherche de partie du joueur dans Redis

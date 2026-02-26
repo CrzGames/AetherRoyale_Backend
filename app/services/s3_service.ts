@@ -88,71 +88,67 @@ export default class S3Service {
     platform: string | null
     arch: string | null
     filename: string
-  } 
-  {
-    const parts = key.split('/').filter(Boolean)
-    const filename = parts.at(-1) ?? key
+  } {
+    const parts: string[] = key.split('/').filter(Boolean)
+    const filename: string = parts.at(-1) ?? key
 
-    const envIndex = parts.findIndex((p) => p === 'staging' || p === 'production')
-    const environment = envIndex >= 0 ? (parts[envIndex] as 'staging' | 'production') : null
+    const envIndex: number = parts.findIndex((p: string) => p === 'staging' || p === 'production')
+    const environment: 'staging' | 'production' | null =
+      envIndex >= 0 ? (parts[envIndex] as 'staging' | 'production') : null
 
     let version: string | null = null
     let commitSha: string | null = null
-    const releaseFolder = envIndex >= 0 ? (parts[envIndex + 1] ?? null) : null
+    const releaseFolder: string | null = envIndex >= 0 ? (parts[envIndex + 1] ?? null) : null
 
     if (environment === 'staging' && releaseFolder) {
-      const m = releaseFolder.match(/^(?<version>\d+\.\d+\.\d+)-staging-(?<sha>[0-9a-f]{7,40})$/i)
+      const m: RegExpMatchArray | null = releaseFolder.match(
+        /^(?<version>\d+\.\d+\.\d+)-staging-(?<sha>[0-9a-f]{7,40})$/i,
+      )
       if (m?.groups) {
-        version = m.groups.version ?? null
-        commitSha = m.groups.sha ?? null
+        version = m.groups.version
+        commitSha = m.groups.sha
       }
     } else if (environment === 'production' && releaseFolder) {
-      const m = releaseFolder.match(/^(?<version>\d+\.\d+\.\d+)$/i)
-      if (m?.groups) version = m.groups.version ?? null
+      const m: RegExpMatchArray | null = releaseFolder.match(/^(?<version>\d+\.\d+\.\d+)$/i)
+      if (m?.groups) version = m.groups.version
     }
 
     // 1) Format "2 segments": <name>-<platform>-<arch>-<version>(-staging-<sha>).zip
-    const stagingFile2 = filename.match(
+    const stagingFile2: RegExpMatchArray | null = filename.match(
       /-(?<platform>[a-z0-9]+)-(?<arch>[a-z0-9]+)-(?<v>\d+\.\d+\.\d+)-staging-(?<sha>[0-9a-f]{7,40})\.zip$/i,
     )
-    const prodFile2 = filename.match(
+    const prodFile2: RegExpMatchArray | null = filename.match(
       /-(?<platform>[a-z0-9]+)-(?<arch>[a-z0-9]+)-(?<v>\d+\.\d+\.\d+)\.zip$/i,
     )
 
     // 2) Format mobile "1 segment": <name>-<platform>-<version>(-staging-<sha>).zip  (platform=android|ios)
-    const stagingFile1 = filename.match(
+    const stagingFile1: RegExpMatchArray | null = filename.match(
       /-(?<platform>android|ios)-(?<v>\d+\.\d+\.\d+)-staging-(?<sha>[0-9a-f]{7,40})\.zip$/i,
     )
-    const prodFile1 = filename.match(
-      /-(?<platform>android|ios)-(?<v>\d+\.\d+\.\d+)\.zip$/i,
-    )
+    const prodFile1: RegExpMatchArray | null = filename.match(/-(?<platform>android|ios)-(?<v>\d+\.\d+\.\d+)\.zip$/i)
 
     let platform: string | null = null
     let arch: string | null = null
 
     if (stagingFile1?.groups) {
-      platform = stagingFile1.groups.platform ?? null
+      platform = stagingFile1.groups.platform
       arch = null
-      version = version ?? stagingFile1.groups.v ?? null
-      commitSha = commitSha ?? stagingFile1.groups.sha ?? null
+      version = version ?? stagingFile1.groups.v
+      commitSha = commitSha ?? stagingFile1.groups.sha
     } else if (prodFile1?.groups) {
-      platform = prodFile1.groups.platform ?? null
+      platform = prodFile1.groups.platform
       arch = null
-      version = version ?? prodFile1.groups.v ?? null
+      version = version ?? prodFile1.groups.v
     } else if (stagingFile2?.groups) {
-      platform = stagingFile2.groups.platform ?? null
-      arch = stagingFile2.groups.arch ?? null
-      version = version ?? stagingFile2.groups.v ?? null
-      commitSha = commitSha ?? stagingFile2.groups.sha ?? null
+      platform = stagingFile2.groups.platform
+      arch = stagingFile2.groups.arch
+      version = version ?? stagingFile2.groups.v
+      commitSha = commitSha ?? stagingFile2.groups.sha
     } else if (prodFile2?.groups) {
-      platform = prodFile2.groups.platform ?? null
-      arch = prodFile2.groups.arch ?? null
-      version = version ?? prodFile2.groups.v ?? null
+      platform = prodFile2.groups.platform
+      arch = prodFile2.groups.arch
+      version = version ?? prodFile2.groups.v
     }
-
-    // LOG TEMPORAIRE: à enlever après
-    // eslint-disable-next-line no-console
-    console.log('[parseKey]', { key, environment, releaseFolder, version, commitSha, platform, arch })
 
     return { environment, version, commitSha, platform, arch, filename }
   }

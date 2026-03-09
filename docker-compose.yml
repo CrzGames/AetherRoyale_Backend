@@ -84,7 +84,6 @@ services:
       - '8222:8222' # HTTP monitoring
     volumes:
       - ./nats/nats_config.json:/etc/nats/nats_config.json # Mount a configuration file
-      - nats_data:/data/nats # Mount a volume for JetStream data storage
     command: -c /etc/nats/nats_config.json
     networks:
       - app-network
@@ -97,4 +96,3 @@ volumes:
   node_modules:
   redis_data:
   redisinsight_data:
-  nats_data:

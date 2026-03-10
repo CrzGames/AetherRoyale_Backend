@@ -5,6 +5,7 @@ import type { SignUpRequestBody, SingInRequestBody } from '#interfaces/auth_requ
 import type { SignUpData, SingInData } from '#types/auth_types'
 import type { LoginSuccessResponseBody } from '#interfaces/auth_response_body_interfaces'
 import logger from '@adonisjs/core/services/logger'
+import User from '#models/user'
 
 /**
  * Contrôleur d'authentification gérant les processus d'identification.
@@ -91,5 +92,35 @@ export default class AuthController {
 
     // Retourner la réponse de connexion réussie
     return response.status(200).send(signInResponse)
+  }
+
+  /**
+   * @validateToken
+   * @operationId validateToken
+   * @tag Auth
+   * @summary Valide un access token et retourne les informations de l'utilisateur associé.
+   * @description Valide un access token opaque (préfixé "oat_") envoyé dans l'en-tête HTTP "Authorization: Bearer <token>" et retourne les informations de l'utilisateur associé si le token est valide. Si le token est invalide ou expiré, une erreur 401 Unauthorized est retournée.
+   * @requestBody <ValidateTokenRequestBody>
+   * @responseBody 200 - <ValidateTokenSuccessResponseBody> - Token valide, informations de l'utilisateur retournées
+   * @responseBody 401 - <ErrorResponseBody> - Token invalide ou expiré
+   * @responseBody 500 - <ErrorResponseBody> - Erreur serveur lors de la validation du token
+   */
+  /**
+   * Valide un access token et retourne les informations de l'utilisateur associé.
+   * @param {HttpContext} ctx - Le contexte HTTP contenant la requête et la réponse.
+   * @param {Object} ctx.response - L'objet de réponse HTTP.
+   * @returns {Promise<void>} - Une promesse qui ne retourne rien mais envoie une réponse HTTP.
+   */
+  public async validateToken({ response, auth }: HttpContext): Promise<void> {
+      // Si le middleware d'authentification a réussi, cela signifie que le token est valide et que l'utilisateur est authentifié
+      const user: User = auth.user!
+
+      // Retourner une réponse indiquant que le token est valide et inclure les informations de l'utilisateur
+      return response.status(200).json({
+        user: {
+          id: user.id,
+          username: user.username,
+        }
+      })
   }
 }

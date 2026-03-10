@@ -20,7 +20,7 @@ export default class AuthMiddleware {
       // Si l'utilisateur est authentifié, on passe au middleware suivant ou au contrôleur
       await next()
     } catch {
-      return ctx.response.unauthorized({ message: 'Authentication required.' })
+      return ctx.response.unauthorized({ message: 'Authentication required or invalid token or expired' })
     }
   }
 }

@@ -54,6 +54,7 @@ export default defineConfig({
     () => import('@adonisjs/auth/auth_provider'),
     () => import('@adonisjs/drive/drive_provider'),
     () => import('@adonisjs/redis/redis_provider'),
+    () => import('#providers/nats_provider'),
     {
       file: () => import('adonisjs-scheduler/scheduler_provider'),
       environment: ['console'],

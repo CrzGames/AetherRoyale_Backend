@@ -46,4 +46,6 @@ export default await Env.create(new URL('../', import.meta.url), {
   REDIS_HOST: Env.schema.string({ format: 'host' }),
   REDIS_PORT: Env.schema.number(),
   REDIS_PASSWORD: Env.schema.string.optional(),
+  NATS_SERVER_URL: Env.schema.string(),
+  NATS_NKEY_PRIVATE_KEY: Env.schema.string(),
 })

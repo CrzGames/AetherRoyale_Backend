@@ -45,9 +45,9 @@ export default class NatProvider {
 
     // Enregistrer les abonnements NATS
     natsService.subscribe(
-      'mon.sujet',
+      'gameserver.simulation.etat.metrics',
       (message: string): void => {
-        NatsMessageHandler.handleMonSujet(message)
+        NatsMessageHandler.handleGameserverSimulationEtatMetrics(message)
       },
       'workers-backend-web',
     )

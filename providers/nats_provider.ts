@@ -1,5 +1,6 @@
 import type { ApplicationService } from '@adonisjs/core/types'
 import NatsService from '#services/nats_service'
+import NatsMessageHandler from '#services/nats_message_handler'
 
 /**
  * Un fournisseur pour gérer les connexions NATS dans l'application AdonisJS.
@@ -41,6 +42,15 @@ export default class NatProvider {
     // Résoudre NatsService lorsque le serveur HTTP est prêt à accepter des requêtes
     const natsService: NatsService = await this.app.container.make('natsService')
     await natsService.connect()
+
+    // Enregistrer les abonnements NATS
+    natsService.subscribe(
+      'mon.sujet',
+      (message: string): void => {
+        NatsMessageHandler.handleMonSujet(message)
+      },
+      'workers-backend-web',
+    )
   }
 
   /**

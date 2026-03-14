@@ -1,5 +1,5 @@
 import { connect, StringCodec, ErrorCode, NatsError, nkeyAuthenticator } from 'nats'
-import type { NatsConnection, Subscription, Codec, SubscriptionOptions } from 'nats'
+import type { NatsConnection, Subscription, Codec } from 'nats'
 import env from '#start/env'
 import logger from '@adonisjs/core/services/logger'
 
@@ -74,30 +74,26 @@ export default class NatsService {
    * @returns {Promise<void>} - Une promesse qui se résout lorsque l'abonnement est réussi.
    * @throws {NatsError} - Si l'abonnement échoue ou si la connexion n'est pas établie.
    */
-  public async subscribe(subject: string, callback: (message: string) => void, queue?: string): Promise<void> {
+  public subscribe(subject: string, callback: (message: string) => void | Promise<void>, queue?: string): Subscription {
     if (!this.nc) {
       throw new NatsError('Not connected to NATS server.', ErrorCode.ApiError)
     }
 
-    try {
-      const options: SubscriptionOptions = {
-        queue: queue,
-      }
-      const subscription: Subscription = this.nc.subscribe(subject, options)
-      this.subscriptions.set(subject, subscription)
-      logger.info(`Subscribed to ${subject}`)
+    const subscription: Subscription = this.nc.subscribe(subject, { queue })
+    this.subscriptions.set(subject, subscription)
+    logger.info(`Subscribed to ${subject} (queue=${queue ?? 'none'})`)
 
+    void (async (): Promise<void> => {
       for await (const msg of subscription) {
-        callback(this.sc.decode(msg.data))
+        try {
+          await callback(this.sc.decode(msg.data))
+        } catch (error) {
+          logger.error({ err: error, subject }, 'Message handler failed')
+        }
       }
-    } catch (error) {
-      if (error instanceof NatsError) {
-        logger.error(`Failed to subscribe : [${error.code}] ${error.message}`)
-      } else {
-        logger.error('Failed to subscribe :' + error)
-      }
-      throw error
-    }
+    })()
+
+    return subscription
   }
 
   /**

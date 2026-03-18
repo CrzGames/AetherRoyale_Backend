@@ -1,3 +1,6 @@
+/**
+ * JSDOC TODO
+ */
 export type RCNETSimulationEtatMetrics = {
   frequence_cible_tick_simulation_hz: number
   frequence_reelle_tick_simulation_hz_sur_derniere_seconde: number
@@ -19,6 +22,9 @@ export type RCNETSimulationEtatMetrics = {
   nombre_abandons_de_backlog_simulation_depuis_le_lancement_du_serveur: number
 }
 
+/**
+ * JSDOC TODO
+ */
 export type GameserverSimulationEtatMetricsPayload = {
   server_id: number
   temps_reel_traitement_network_incoming_dispatcher_sur_ce_tick_ms: number

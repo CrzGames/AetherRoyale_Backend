@@ -8,8 +8,7 @@ import type { AllocationResponse__Output } from '#agones/allocation/AllocationRe
 import type { AllocationServiceClient } from '#agones/allocation/AllocationService'
 import logger from '@adonisjs/core/services/logger'
 import crypto from 'node:crypto'
-import EncryptionService from '#services/encryption_service'
-import type { AllocationSecurityData, MatchTokenBase64, UdpEncryptionKeyBase64 } from '#types/agones_types'
+import type { MatchTokenBase64 } from '#types/agones_types'
 
 /**
  * Génère un token de session unique (16 bytes / 128 bits) encodé en base64.
@@ -145,102 +144,68 @@ const client: AllocationServiceClient = new proto.allocation.AllocationService(
 
 /**
  * Fonction pour allouer un GameServer via l’Agones Allocator.
- * @returns {Promise<AllocationSecurityData>} - Une promesse qui retourne les données de sécurité (token de match + clé de chiffrement UDP) à transmettre au client de jeu.
+ * @returns {Promise<MatchTokenBase64>} - Une promesse qui retourne le token de match à transmettre au client de jeu.
  */
-export const allocateGameServerInFleet: () => Promise<AllocationSecurityData> =
-  async (): Promise<AllocationSecurityData> => {
-    /**
-     * Génération d’un token de match unique pour l’allocation d’un GameServer,
-     * à injecter dans les annotations Kubernetes et à transmettre au client de jeu.
-     */
-    const matchTokenBase64: MatchTokenBase64 = generateMatchToken()
+export const allocateGameServerInFleet: () => Promise<MatchTokenBase64> = async (): Promise<MatchTokenBase64> => {
+  /**
+   * Génération d’un token de match unique pour l’allocation d’un GameServer,
+   * à injecter dans les annotations Kubernetes et à transmettre au client de jeu.
+   */
+  const matchTokenBase64: MatchTokenBase64 = generateMatchToken()
 
-    /**
-     * Génère une clé de chiffrement symétrique unique (XChaCha20-Poly1305) pour sécuriser
-     * la communication UDP entre le client et le GameServer pour ce match précis.
-     *
-     * Cette clé est spécifique à l’allocation en cours (par match) et sera :
-     * 1) Transmise au client via l’API HTTPS / WebSocket.
-     * 2) Injectée dans les annotations du GameServer via l’Agones Allocator.
-     * 3) Récupérée côté GameServer via le SDK Agones afin de pouvoir déchiffrer
-     *    les paquets UDP entrants et chiffrer les réponses.
-     *
-     * Utilisation côté réseau :
-     * - Le client chiffre le payload des paquets UDP avec cette clé.
-     * - Le GameServer déchiffre les paquets reçus avec la même clé.
-     *
-     * Portée et sécurité :
-     * - Clé générée aléatoirement et unique par allocation/match.
-     * - Encodée en base64 uniquement pour le transport (API / annotations Kubernetes).
-     * - Décodée en bytes côté client et côté GameServer avant utilisation.
-     * - Idéalement valable uniquement pendant la durée du match (clé jetable).
-     *
-     * IMPORTANT :
-     * - Cette clé ne doit jamais être hardcodée.
-     * - Elle ne doit pas être loguée.
-     * - Elle doit être différente pour chaque allocation afin d’éviter toute réutilisation
-     *   entre matchs et limiter l’impact en cas de compromission.
-     */
-    const udpEncryptionKeyBase64: UdpEncryptionKeyBase64 = await EncryptionService.generateEncryptionKey()
+  /**
+   * Requête pour allouer un GameServer.
+   */
+  const request: AllocationRequest = {
+    // Namespace Kubernetes qui contient tes Fleets / GameServers
+    namespace: env.get('AGONES_GAMESERVERS_NAMESPACE'),
 
-    /**
-     * Requête pour allouer un GameServer.
-     */
-    const request: AllocationRequest = {
-      // Namespace Kubernetes qui contient tes Fleets / GameServers
-      namespace: env.get('AGONES_GAMESERVERS_NAMESPACE'),
-
-      // Sélection du GameServer à allouer (typiquement via la Fleet)
-      gameServerSelectors: [
-        {
-          matchLabels: {
-            // Match la Fleet ciblée via son nom exact
-            'agones.dev/fleet': env.get('AGONES_FLEET_NAME'),
-          },
-        },
-      ],
-
-      // Patch metadata appliqué au GameServer *au moment de l'allocation*
-      metadata: {
-        annotations: {
-          // Injection du token de match unique dans les annotations Kubernetes du GameServer alloué
-          'quilkin.dev/tokens': matchTokenBase64,
-          // Injection de la clé de chiffrement symétrique unique pour les paquets UDP
-          'crzgames.dev/udp-encryption-key': udpEncryptionKeyBase64,
-        },
-      },
-    }
-
-    /**
-     * Appel gRPC vers Agones Allocator.
-     *
-     * Allocation d’un GameServer READY dans la Fleet.
-     */
-    const response: AllocationResponse__Output = await new Promise<AllocationResponse__Output>(
-      (resolve: (value: AllocationResponse__Output) => void, reject: (reason?: unknown) => void): void => {
-        client.Allocate(request, (err: grpc.ServiceError | null, response: AllocationResponse__Output): void => {
-          if (err) {
-            logger.error({ err }, 'Agones allocation error')
-            reject(err)
-            return
-          }
-          resolve(response)
-        })
-      },
-    )
-
-    // Log safe (sans token et clé de chiffrement) de l’allocation réussie avec les infos du GameServer
-    logger.info(
+    // Sélection du GameServer à allouer (typiquement via la Fleet)
+    gameServerSelectors: [
       {
-        gameServerName: response.gameServerName,
-        nodeName: response.nodeName,
+        matchLabels: {
+          // Match la Fleet ciblée via son nom exact
+          'agones.dev/fleet': env.get('AGONES_FLEET_NAME'),
+        },
       },
-      'Allocated GameServer',
-    )
+    ],
 
-    // Retourne les données de sécurité nécessaires au client de jeu pour communiquer avec le GameServer alloué
-    return {
-      matchTokenBase64,
-      udpEncryptionKeyBase64,
-    }
+    // Patch metadata appliqué au GameServer *au moment de l'allocation*
+    metadata: {
+      annotations: {
+        // Injection du token de match unique dans les annotations Kubernetes du GameServer alloué
+        'quilkin.dev/tokens': matchTokenBase64,
+      },
+    },
   }
+
+  /**
+   * Appel gRPC vers Agones Allocator.
+   *
+   * Allocation d’un GameServer READY dans la Fleet.
+   */
+  const response: AllocationResponse__Output = await new Promise<AllocationResponse__Output>(
+    (resolve: (value: AllocationResponse__Output) => void, reject: (reason?: unknown) => void): void => {
+      client.Allocate(request, (err: grpc.ServiceError | null, response: AllocationResponse__Output): void => {
+        if (err) {
+          logger.error({ err }, 'Agones allocation error')
+          reject(err)
+          return
+        }
+        resolve(response)
+      })
+    },
+  )
+
+  // Log safe (sans token) de l’allocation réussie avec les infos du GameServer
+  logger.info(
+    {
+      gameServerName: response.gameServerName,
+      nodeName: response.nodeName,
+    },
+    'Allocated GameServer',
+  )
+
+  // Retourne les données de sécurité nécessaires au client de jeu pour communiquer avec le GameServer alloué
+  return matchTokenBase64
+}

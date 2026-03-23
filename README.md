@@ -1,7 +1,8 @@
 # Aether Royale - Backend
 
 ## TODO
-Remettre la commande npm dans les scripts dès que possible :     "postbuild": "npm run generate:swagger && cp -a swagger.yml build/",
+
+Remettre la commande npm dans les scripts dès que possible : "postbuild": "npm run generate:swagger && cp -a swagger.yml build/",
 
 <br /><br /><br /><br />
 

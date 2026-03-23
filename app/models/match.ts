@@ -1,7 +1,6 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column, belongsTo, hasMany } from '@adonisjs/lucid/orm'
-import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
-import GameMode from '#models/game_mode'
+import { BaseModel, column, hasMany } from '@adonisjs/lucid/orm'
+import type { HasMany } from '@adonisjs/lucid/types/relations'
 import MatchPlayer from '#models/match_player'
 
 export default class Match extends BaseModel {
@@ -9,7 +8,7 @@ export default class Match extends BaseModel {
   declare public id: number
 
   @column()
-  declare public game_mode_id: number
+  declare public match_type: 'normal_1v1'
 
   @column()
   declare public agones_gameserver_name: string | null
@@ -34,15 +33,6 @@ export default class Match extends BaseModel {
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare public updated_at: DateTime | null
-
-  /**
-   * Relations
-   */
-
-  @belongsTo(() => GameMode, {
-    foreignKey: 'game_mode_id',
-  })
-  declare public game_mode: BelongsTo<typeof GameMode>
 
   @hasMany(() => MatchPlayer, {
     foreignKey: 'match_id',

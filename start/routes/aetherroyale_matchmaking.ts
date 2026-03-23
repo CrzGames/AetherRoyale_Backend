@@ -3,8 +3,8 @@ import { middleware } from '#start/kernel'
 
 const MatchmakingController = () => import('#controllers/matchmaking_controller')
 
-// Boutton "Recherche une partie" côté client du jeu => POST /matchmaking/join
+// Bouton "Recherche une partie" cote client du jeu => POST /matchmaking/join
 router.post('/matchmaking/join', [MatchmakingController, 'matchmakingJoin']).use(middleware.auth())
 
-// Boutton "Annuler la recherche de partie" côté client du jeu => POST /matchmaking/leave
+// Bouton "Annuler la recherche de partie" cote client du jeu => POST /matchmaking/cancel
 router.post('/matchmaking/cancel', [MatchmakingController, 'matchmakingCancel']).use(middleware.auth())

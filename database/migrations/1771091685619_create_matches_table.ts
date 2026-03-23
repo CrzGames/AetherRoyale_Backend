@@ -8,137 +8,73 @@ export default class extends BaseSchema {
       table.increments('id').primary()
 
       /**
-       * Référence vers le mode de jeu utilisé pour cette partie.
+       * Type de match joue.
        *
-       * Cette colonne pointe vers la table `game_modes`, qui décrit :
-       * - si la file est "ranked" ou "unranked"
-       * - la taille d'équipe (solo/duo/quatre)
-       * - le min/max joueurs requis/autorisé
-       * - si le mode est activé dans le menu
+       * Decision produit actuelle:
+       * - Un seul format supporte par le backend: "normal_1v1"
        *
-       * Exemple :
-       * - game_mode_id => (queue_type="unranked", team_size=1, min_players=3, max_players=100)
-       *
-       * Utilisation côté backend :
-       * - Savoir quel type de match a été joué
-       * - Faire des statistiques par mode (solo non classé, duo classé, etc.)
-       * - Filtrer l’historique de matchs d’un joueur par mode
+       * Pourquoi garder cette colonne meme avec un seul type ?
+       * - Historiser explicitement le format en base
+       * - Garder un schema evolutif si un jour tu reintroduis d'autres formats
+       *   (sans remettre queue_type/team_size/ranked/unranked)
        */
-      table.integer('game_mode_id').unsigned().notNullable().references('id').inTable('game_modes').onDelete('RESTRICT')
+      table.enum('match_type', ['normal_1v1']).notNullable().defaultTo('normal_1v1')
 
       /**
-       * Nom du GameServer Agones alloué pour ce match.
+       * Nom du GameServer Agones ayant heberge le match.
        *
-       * Exemple typique :
-       * - "ashen-kingdoms-fleet-7d9f8b5c7f-k2l9p"
-       * (le format exact dépend de ta Fleet / naming / allocator)
-       *
-       * Pourquoi stocker ça alors qu'on utilise Quilkin ?
-       * - Debug : retrouver précisément quel GameServer a servi le match
-       * - Corrélation de logs : backend ↔ gameserver ↔ node Kubernetes
-       * - Investigation crash : identifier le pod responsable
-       *
-       * Note :
-       * - Le client ne s’en sert pas.
-       * - C'est une donnée serveur (observabilité).
+       * Utilise pour:
+       * - debug infra
+       * - correlation backend <-> gameserver <-> kubernetes
        */
       table.string('agones_gameserver_name', 255).nullable()
 
       /**
-       * Nom du node Kubernetes sur lequel le GameServer Agones tournait.
+       * Nom du node Kubernetes qui executait le GameServer.
        *
-       * Exemple :
-       * - "k8s-gameservers-pool-3c1f2a-node-7"
-       *
-       * Pourquoi stocker ça ?
-       * - Debug : savoir si les crashs viennent d'un node spécifique
-       * - Observabilité : corrélation avec métriques du node (CPU/RAM/network)
-       *
-       * Note :
-       * - Le client ne s’en sert pas.
-       * - C'est une donnée serveur (observabilité).
+       * Utilise pour:
+       * - troubleshooting infra
+       * - analyse de stabilite par node
        */
       table.string('agones_node_name', 255).nullable()
 
       /**
-       * Nombre réel de joueurs ayant effectivement participé à cette partie.
+       * Nombre de joueurs effectivement assignes au match.
        *
-       * Pourquoi on stocke cette valeur ?
-       * - Même si on peut calculer COUNT(*) dans `match_players`,
-       *   l'avoir ici rend les requêtes de stats beaucoup plus simples et rapides.
-       *
-       * Exemple :
-       * - Le mode autorise jusqu'à 100 joueurs (game_modes.max_players = 100)
-       * - Mais cette partie a réellement commencé avec 37 joueurs (players_count = 37)
-       *
-       * Utilisation :
-       * - Statistiques (remplissage moyen d'un mode)
-       * - Debug (match démarré trop tôt / trop tard)
-       * - Analytics (taux de remplissage, rétention, etc.)
+       * Sur le flux 1v1, la valeur cible est 2.
+       * On laisse un default a 0 pour representer un match cree mais pas encore rempli.
        */
-      table.integer('players_count').unsigned().notNullable()
+      table.integer('players_count').unsigned().notNullable().defaultTo(0)
 
       /**
-       * Statut final de la partie.
+       * Statut final du match ecrit en base.
        *
-       * Valeurs possibles :
-       * - finished : la partie s'est terminée normalement (victoire / fin de zone / etc.)
-       * - aborted  : la partie a été stoppée volontairement (maintenance, admin, etc.)
-       * - crashed  : la partie s'est arrêtée suite à un crash serveur / bug fatal
-       *
-       * Utilisation :
-       * - Filtrer les matchs valides dans l'historique du joueur
-       * - Debug des problèmes serveurs
-       * - Exclure les matchs "crashed" des stats/ranked (plus tard)
+       * - finished: fin normale
+       * - aborted: fin volontaire / annulation
+       * - crashed: interruption technique
        */
       table.enum('status', ['finished', 'aborted', 'crashed']).notNullable().defaultTo('finished')
 
       /**
-       * Date/heure de démarrage de la partie.
-       *
-       * Représente le moment où le match a réellement commencé, c'est-à-dire :
-       * - le GameServer a été alloué et est prêt
-       * - les joueurs ont été téléportés dans la partie
-       *
-       * Valeur NULL si :
-       * - la partie n'a pas encore commencé (match en préparation)
+       * started_at: instant de debut reel du match
+       * ended_at: instant de fin reel du match
        */
       table.timestamp('started_at').nullable()
-
-      /**
-       * Date/heure de fin de la partie.
-       *
-       * Valeur NULL si :
-       * - la partie est encore en cours
-       * - le match a crash et la fin n'a pas été écrite
-       *
-       * Utilisation :
-       * - Calculer la durée d'un match (ended_at - started_at)
-       * - Statistiques sur la durée moyenne
-       * - Déterminer si un match est "stuck" (toujours NULL après X minutes)
-       */
       table.timestamp('ended_at').nullable()
 
       /**
-       * Timestamps standards de création/mise à jour.
-       *
-       * created_at : moment où l'entrée match a été créée en base
-       * updated_at : dernière mise à jour (ex: fin du match, statut modifié, etc.)
+       * Timestamps standards de creation / mise a jour.
        */
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').nullable()
 
       /**
-       * Index pour accélérer :
-       * - statistiques par mode (group by game_mode_id)
-       * - listes de matchs filtrées par mode
+       * Index utile pour filtrer des historiques/statistiques par type de match.
        */
-      table.index(['game_mode_id'])
+      table.index(['match_type'])
 
       /**
-       * Index pour accélérer :
-       * - récupération des matchs récents (order by started_at desc)
-       * - stats par période (par jour/semaine/mois)
+       * Index utile pour les listes chronologiques de matchs.
        */
       table.index(['started_at'])
     })

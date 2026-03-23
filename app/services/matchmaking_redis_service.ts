@@ -16,7 +16,7 @@ import redis from '@adonisjs/redis/services/main'
 /**
  * Cle logique du mode runtime unique.
  */
-export const NORMAL_1V1_MODE_KEY = 'normal_1v1' as const
+export const NORMAL_1V1_MODE_KEY: string = 'normal_1v1' as const
 
 /**
  * LIST Redis contenant la file d'attente des joueurs en recherche.
@@ -25,7 +25,7 @@ export const NORMAL_1V1_MODE_KEY = 'normal_1v1' as const
  * - RPUSH userId
  * - LPOP userId
  */
-export const NORMAL_1V1_QUEUE_KEY = `mm:queue:${NORMAL_1V1_MODE_KEY}`
+export const NORMAL_1V1_QUEUE_KEY: string = `mm:queue:${NORMAL_1V1_MODE_KEY}`
 
 /**
  * ZSET Redis contenant les matchs "joinable" (non pleins).
@@ -34,13 +34,13 @@ export const NORMAL_1V1_QUEUE_KEY = `mm:queue:${NORMAL_1V1_MODE_KEY}`
  * On pioche toujours le match le plus rempli (ZREVRANGE 0 0)
  * pour limiter la fragmentation.
  */
-export const NORMAL_1V1_JOINABLE_KEY = `mm:joinable:${NORMAL_1V1_MODE_KEY}`
+export const NORMAL_1V1_JOINABLE_KEY: string = `mm:joinable:${NORMAL_1V1_MODE_KEY}`
 
 /**
  * Contraintes hard 1v1.
  */
-const NORMAL_1V1_MIN_PLAYERS = 2
-const NORMAL_1V1_MAX_PLAYERS = 2
+const NORMAL_1V1_MIN_PLAYERS: number = 2
+const NORMAL_1V1_MAX_PLAYERS: number = 2
 
 /**
  * Type helper derive de la constante mode.
@@ -61,8 +61,17 @@ export type MatchRuntimeStatus = 'joinable' | 'starting' | 'in_progress' | 'ende
  * Alias de lisibilite.
  */
 export type MatchId = number
+/**
+ *
+ */
 export type UserId = number
+/**
+ *
+ */
 export type MatchTokenBase64 = string
+/**
+ *
+ */
 export type UdpEncryptionKeyBase64 = string
 
 /**
@@ -162,13 +171,7 @@ export class MatchmakingRedisService {
     const userQueueKey: string = keyUserQueue(userId)
 
     // NX garantit qu'on n'ecrase pas un etat deja actif.
-    const ok: string | null = await redis.set(
-      userQueueKey,
-      NORMAL_1V1_MODE_KEY,
-      'EX',
-      TTL_USER_QUEUE_SECONDS,
-      'NX',
-    )
+    const ok: string | null = await redis.set(userQueueKey, NORMAL_1V1_MODE_KEY, 'EX', TTL_USER_QUEUE_SECONDS, 'NX')
 
     if (ok === null) {
       // Deja en recherche -> on prolonge juste la session active.
